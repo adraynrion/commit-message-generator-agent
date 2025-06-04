@@ -4,18 +4,34 @@ This repository contains the configuration and setup files for a specialized AI 
 
 ## Quick Start
 
-1. **Set up the git MCP tool**: Follow instructions in `mcp_setup.md`
-2. **Deploy your agent**: Use the configuration in `agent_config.json`
-3. **Start generating commit messages**: The agent will analyze your repository and suggest commit messages
+### Option 1: Automated Installation
+```bash
+# Run the installation script
+chmod +x install.sh
+./install.sh
+```
+
+### Option 2: Manual Installation
+```bash
+# Install prerequisites
+pip install uvx
+
+# Test MCP server
+uvx mcp-server-git --help
+
+# Deploy your agent using agent_config.json
+```
 
 ## Features
 
-- ✅ Conventional commit message generation
-- ✅ Git repository analysis via MCP tool
-- ✅ Staged changes analysis
-- ✅ Multiple commit message suggestions
+- ✅ Conventional commit message generation with custom format
+- ✅ Git repository analysis via uvx MCP tool
+- ✅ Staged changes analysis using `git_diff_staged`
+- ✅ Automatic ticket number extraction from branch names
 - ✅ Interactive workflow for staging and committing
-- ✅ Support for all conventional commit types
+- ✅ Support for all commit types (FEATURE, IMPROVE, BUGFIX, etc.)
+- ✅ Severity assessment (MAJOR, MEDIUM, MINOR)
+- ✅ English-only commit messages with 70-character wrapping
 
 ## How It Works
 
@@ -90,12 +106,12 @@ git add .
 | File | Description |
 # 1. Use git_diff_staged to analyze changes
 # 2. Extract ticket number from branch or ask for it
-# 3. Determine appropriate commit type and severity
-# 4. Generate formatted commit message
-# 5. Ask for confirmation before committing
-```
-
-### Example Interaction
+|------|-------------|
+| `agent_config.json` | Complete agent configuration with MCP setup |
+| `mcp_config.json` | Standalone MCP configuration for git tool |
+| `system_prompt.md` | Complete system prompt for commit message generation |
+| `mcp_setup.md` | Git MCP tool setup instructions using uvx |
+| `setup_instructions.md` | Complete setup guide | Example Interaction
 ```
 User: "Please commit my changes"
 Agent: "Let me analyze the staged changes using git_diff_staged..."

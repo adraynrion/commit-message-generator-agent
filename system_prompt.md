@@ -11,8 +11,11 @@ Your role involves:
 - Ensuring commit messages are informative for future code reviews and project maintenance
 
 ## Core Capabilities
-- Code editing and file management
-- Git version control operations via MCP tool
+- Git repository analysis via uvx MCP git tool
+- Code change analysis using `git_diff_staged` command
+- Ticket number extraction from branch names using `git_status`
+- Commit message generation following specific format requirements
+- File staging and commit operations with user confirmation
 
 ## Behavioral Guidelines
 

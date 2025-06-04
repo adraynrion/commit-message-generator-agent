@@ -12,18 +12,44 @@ This directory contains the configuration for a specialized AI Agent that analyz
 
 ## Setup Steps
 
-### 1. Install Git MCP Tool
-Follow the instructions in `mcp_setup.md` to install and configure the git MCP tool. This is essential for the agent to analyze repository changes.
+### 1. Install Prerequisites
+Install the required dependencies:
+```bash
+# Install uvx (Python package runner)
+pip install uvx
 
-### 2. Deploy Agent
-Use your preferred AI agent deployment platform and reference the `agent_config.json` configuration file.
+# Verify git installation
+git --version
+```
 
-### 3. Test Repository Access
+### 2. Test MCP Git Server
+Verify the MCP git server is accessible:
+```bash
+uvx mcp-server-git
+```
+
+### 3. Deploy Agent
+Use your preferred AI agent deployment platform and reference the `agent_config.json` configuration file. The MCP configuration is already included:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "git": {
+        "command": "uvx",
+        "args": ["mcp-server-git"]
+      }
+    }
+  }
+}
+```
+
+### 4. Test Repository Access
 Ensure the agent can access git repositories and perform basic operations:
-- `git status`
-- `git diff`
-- `git add`
-- `git commit`
+- `git_status` - Check repository status and extract ticket numbers
+- `git_diff_staged` - Analyze staged changes
+- `git_add` - Stage files
+- `git_commit` - Create commits
 
 ## Usage Workflow
 
@@ -124,7 +150,15 @@ You can extend this setup by:
 - **Permission errors**: Check git repository permissions and user configuration
 
 ### Verification Steps
-1. Test git commands manually: `git status`, `git diff`
-2. Verify MCP tool is running and accessible
-3. Check agent configuration and deployment
-4. Test with a simple file change first
+1. Test uvx installation: `uvx --version`
+2. Test MCP git server: `uvx mcp-server-git`
+3. Verify git commands manually: `git status`, `git diff --staged`
+4. Check agent configuration includes proper MCP setup
+5. Test with a simple file change first
+
+### MCP Configuration Details
+The agent uses this MCP configuration:
+- **Command**: `uvx` (Python package runner)
+- **Args**: `["mcp-server-git"]` (MCP git server package)
+- **Primary operations**: `git_status`, `git_diff_staged`, `git_commit`
+- **No manual installation**: uvx handles package management automatically
