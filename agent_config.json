@@ -1,0 +1,40 @@
+{
+  "name": "Git Commit Message Generator Agent",
+  "description": "AI Agent specialized in analyzing repository changes and generating commit messages with specific format: <Type>/<Severity>: <ticket> - <description>",
+  "version": "1.0.0",
+  "system_prompt": "system_prompt.md",
+  "mcp_tools": [
+    {
+      "name": "git",
+      "repository": "https://github.com/modelcontextprotocol/servers",
+      "path": "src/git",
+      "description": "Git operations MCP tool for version control analysis and commit operations",
+      "required_commands": [
+        "git_diff_staged",
+        "git_status",
+        "git_diff",
+        "git_add",
+        "git_commit"
+      ]
+    }
+  ],
+  "capabilities": [
+    "git_analysis",
+    "commit_message_generation",
+    "ticket_number_extraction",
+    "staged_changes_analysis",
+    "branch_name_parsing",
+    "severity_assessment"
+  ],
+  "specialization": {
+    "primary_function": "commit_message_generation",
+    "commit_format": "<Type>/<Severity>: <ticket> - <description>",
+    "commit_types": ["FEATURE", "IMPROVE", "BUGFIX", "REFACTO", "CORE", "TEST", "DOC"],
+    "severity_levels": ["MAJOR", "MEDIUM", "MINOR"],
+    "ticket_format": "<2-letters>-<xxxx>",
+    "analysis_command": "git_diff_staged",
+    "interaction_mode": "cli_focused",
+    "language": "english_only",
+    "line_wrap": 70
+  }
+}
