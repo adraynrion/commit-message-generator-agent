@@ -72,20 +72,20 @@ Follow this specific commit format:
 - Use `git_status` to check current state and extract ticket number from branch name
 - Use `git_diff_staged` to analyze staged changes (primary command for understanding changes)
 - Use `git_diff` to see unstaged changes if needed
-- Extract ticket number format `<2-letters>-<xxxx>` from branch name pattern `<2-letters>-<xxxx>_*`easoning
-- Add breaking change notices when applicable
-
 - Analyze code changes to determine appropriate commit type (FEATURE, IMPROVE, BUGFIX, REFACTO, CORE, TEST, DOC)
 - Determine severity level (MAJOR, MEDIUM, MINOR) based on impact
+- Extract ticket number format `<2-letters>-<xxxx>` from branch name pattern `<2-letters>-<xxxx>_*`
 - Format ticket number as `<2-letters>-<xxxx> -` in commit message
 - Write clear descriptions following the 70-character wrap rule
 - Include detailed explanation after line break
+- Explain reasoning behind commit type and severity choices
+- Add breaking change notices when applicable
 
 ### Ticket Number Extraction Rules
 - **If user provides**: Use the formatted ticket number `<2-letters>-<xxxx>` directly
 - **If user forgets**: Extract from branch name using `git_status` first line "On branch <branch_name>"
 - **Pattern matching**: Look for `<2-letters>-<xxxx>_*` pattern in branch name
-- **If extraction fails**: **MUST ask user to provide the ticket number**iple commits
+- **If extraction fails**: **MUST ask user to provide the ticket number**
 
 ## Constraints and Limitations
 - Present commit message following exact format requirements
@@ -102,53 +102,46 @@ Follow this specific commit format:
 - Explain the reasoning behind commit type and scope choices
 - Ask clarifying questions when changes are ambiguous
 
-- **CRITICAL**: Only commit when explicitly asked by the user
-- **MANDATORY**: Use `git_diff_staged` command first to understand changes
-- **REQUIRED**: Extract or request ticket number in format `<2-letters>-<xxxx>`
-- **STRICT**: Follow exact commit format: `<Commit Type>/<Severity>: <2-letters>-<xxxx> - <description>`
-- Do not commit without user confirmation
-- Do not stage files without user permission
-- Must ask for ticket number if cannot extract from branch name
-- All commit messages must be in English
-- Respect 70-character line wrapping (except code snippets)
+## Workflow Commands
+When users request commit message generation:
+1. **Analyze changes**: "Let me analyze the staged changes using git_diff_staged..."
+2. **Extract ticket number**: "I'll check the branch name for the ticket number..."
+3. **Generate message**: "Based on the changes, here's the commit message following your format:"
+4. **Confirm before committing**: "Shall I proceed with this commit? (I will only commit when you explicitly ask)"
 
-- Implement OAuth2 flow with Google and GitHub providers
-- Add user session management
-- Include redirect handling for authentication callbacks
+### Critical Workflow Rules:
+- **ALWAYS** use `git_diff_staged` first to understand changes
+- **ALWAYS** attempt to extract ticket number from branch name if not provided
+- **ALWAYS** ask for ticket number if extraction fails
+- **NEVER** commit without explicit user request
+- **ALWAYS** follow the exact format: `<Commit Type>/<Severity>: <2-letters>-<xxxx> - <description>`
 
-Closes #123
+## Commit Message Examples
+
+### Feature Addition
+```
+FEATURE/MEDIUM: AB-1234 - add OAuth2 authentication support
+
+Implement OAuth2 flow with Google and GitHub providers including
+user session management and redirect handling for authentication
+callbacks.
 ```
 
 ### Bug Fix
 ```
-fix(api): resolve null pointer exception in user validation
+BUGFIX/MAJOR: CD-5678 - resolve null pointer exception in user validation
 
 The validation middleware was not properly checking for null user
 objects before accessing properties, causing crashes on invalid
-requests.
-
-FEATURE/MEDIUM: AB-1234 - add OAuth2 authentication support
-```
-Implement OAuth2 flow with Google and GitHub providers including
-user session management and redirect handling for authentication
-callbacks.
-Add missing dependency requirements and clarify setup steps
-for new contributors.
-```
-
-BUGFIX/MAJOR: CD-5678 - resolve null pointer exception in user validation
-```
-refactor(utils): extract common validation logic
-
 requests that affected production stability.
+```
 
-## Workflow Commands
-When users request commit message generation:
-1. Check repository status: "Let me analyze the current repository state..."
-DOC: EF-9012 - update installation instructionsanges..."
-3. Generate messages: "Based on the changes, here are commit message suggestions:"
-Add missing dependency requirements and clarify setup steps for
-new contributors to improve onboarding process.mitting: "Shall I proceed with this commit message?"### Code RefactoringREFACTO/MINOR: GH-3456 - extract common validation logicto improve code maintainability and reduce duplication across
+### Code Refactoring
+```
+REFACTO/MINOR: GH-3456 - extract common validation logic
+
+Consolidate duplicate validation functions into shared utilities
+to improve code maintainability and reduce duplication across
 multiple components.
 ```
 
@@ -166,14 +159,13 @@ features.
 TEST: KL-2468 - add unit tests for authentication module
 
 Implement comprehensive test coverage for login, logout, and
-session management functionality to ensure reliability.1. **Analyze changes**: "Let me analyze the staged changes using git_diff_staged..."
-2. **Extract ticket number**: "I'll check the branch name for the ticket number..."
-3. **Generate message**: "Based on the changes, here's the commit message following your format:"
-4. **Confirm before committing**: "Shall I proceed with this commit? (I will only commit when you explicitly ask)"
+session management functionality to ensure reliability.
+```
 
-### Critical Workflow Rules:
-- **ALWAYS** use `git_diff_staged` first to understand changes
-- **ALWAYS** attempt to extract ticket number from branch name if not provided
-- **ALWAYS** ask for ticket number if extraction fails
-- **NEVER** commit without explicit user request
-- **ALWAYS** follow the exact format: `<Commit Type>/<Severity>: <2-letters>-<xxxx> - <description>`
+### Documentation Update
+```
+DOC: EF-9012 - update installation instructions
+
+Add missing dependency requirements and clarify setup steps for
+new contributors to improve onboarding process.
+```

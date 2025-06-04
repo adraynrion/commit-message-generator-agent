@@ -24,10 +24,12 @@ Install uvx in the virtual environment:
 ```bash
 # Ensure virtual environment is activated
 pip install --upgrade pip
+
 # Option 1: Install from requirements.txt
 pip install -r requirements.txt
 
-# Option 2: Install uvx directlypip install uvx
+# Option 2: Install uvx directly
+pip install uvx
 ```
 
 ### 3. Verify Git Installation
@@ -37,7 +39,7 @@ git --version
 ```
 
 ### 4. Test MCP Git Server
-Test that the MCP git server can be accessed (ensure virtual environment is activated):(ensure virtual environment is activated):
+Test that the MCP git server can be accessed (ensure virtual environment is activated):
 ```bash
 uvx mcp-server-git
 ```
@@ -79,8 +81,6 @@ Once configured, your agent will have access to these git operations:
 - `git_pull` - Pull changes from remote
 - `git_branch` - Branch management
 - `git_checkout` - Switch branches/checkout files
-
-
 - `git_log` - View commit history
 - `git_tag` - Tag management
 - `git_reset` - Reset changes
@@ -95,7 +95,9 @@ For the Git Commit Message Generator Agent, the primary workflow uses:
 ### 9. Security Considerations
 - The git MCP tool operates on the local repository
 - Ensure proper access controls are in place
-- Be cautious with destructive operations (reset, force push)- The agent will never commit without explicit user permission- Consider using branch protection rules for important branches
+- Be cautious with destructive operations (reset, force push)
+- The agent will never commit without explicit user permission
+- Consider using branch protection rules for important branches
 
 ### 10. Troubleshooting
 - Ensure the virtual environment is activated: `source .venv/bin/activate`
@@ -104,6 +106,7 @@ For the Git Commit Message Generator Agent, the primary workflow uses:
 - Verify the MCP server starts correctly: `uvx mcp-server-git`
 - Check repository permissions and git configuration
 - Ensure you're in a valid git repository when using the agent
+
 ## Virtual Environment Management
 
 ### Activating the Environment
@@ -129,6 +132,7 @@ Check that uvx is available in the virtual environment:
 which uvx  # Should point to .venv/bin/uvx
 uvx --version
 ```
+
 ## Usage Examples
 Once set up, you can ask your agent to perform git operations like:
 - "Analyze my staged changes and generate a commit message"

@@ -146,7 +146,8 @@ You can extend this setup by:
 ### Repository Requirements
 - Ensure you're in a git repository
 - Have appropriate git permissions
-- Stage files before requesting commit message generation- Follow branch naming conventions for ticket extraction
+- Stage files before requesting commit message generation
+- Follow branch naming conventions for ticket extraction
 - Use English for all commit-related communication
 
 ## Critical Usage Rules
@@ -167,10 +168,6 @@ You can extend this setup by:
 - **Permission errors**: Check git repository permissions and user configuration
 
 ### Verification Steps
-1. Test uvx installation: `uvx --version`
-2. Test MCP git server: `uvx mcp-server-git`
-3. Verify git commands manually: `git status`, `git diff --staged`
-4. Check agent configuration includes proper MCP setup
 1. Ensure virtual environment is activated: `source .venv/bin/activate`
 2. Test uvx installation: `uvx --version`
 3. Test MCP git server: `uvx mcp-server-git`
@@ -182,7 +179,11 @@ You can extend this setup by:
 - Always activate the virtual environment before using the agent: `source .venv/bin/activate`
 - The virtual environment isolates Python dependencies from your system
 - Deactivate when done: `deactivate`
-- Virtual environment location: `.venv/`
+- Virtual environment location: `.venv/` directory in the project root
+
+### MCP Configuration Details
+The agent uses this MCP configuration:
+- **Command**: `uvx` (Python package runner)
 - **Args**: `["mcp-server-git"]` (MCP git server package)
 - **Primary operations**: `git_status`, `git_diff_staged`, `git_commit`
 - **No manual installation**: uvx handles package management automatically

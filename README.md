@@ -67,6 +67,7 @@ The agent handles ticket numbers intelligently:
 - **If you forget**, it extracts from branch name pattern `AB-1234_feature-name`
 - **If extraction fails**, it will ask you to provide the ticket number
 - **Format in commit**: Always formatted as `AB-1234 -` in the commit message
+
 ## Commit Message Format
 
 The agent follows a specific commit message format:
@@ -113,16 +114,14 @@ git add .
 # The agent will:
 # 1. Check git status
 # 2. Analyze staged changes
-"Please analyze my staged changes and generate a commit message"
-
-
+# 3. Generate commit message
 # 4. Ask for confirmation before committing
+"Please analyze my staged changes and generate a commit message"
 ```
+
 ## Files
 
 | File | Description |
-
-
 |------|-------------|
 | `agent_config.json` | Complete agent configuration with MCP setup |
 | `mcp_config.json` | Standalone MCP configuration for git tool |
@@ -145,7 +144,6 @@ user session management and redirect handling for authentication
 callbacks."
 Agent: "Shall I proceed with this commit?"
 ```
-| `setup_instructions.md` | Complete setup guide |
 
 ## Git Operations Available
 
@@ -158,25 +156,6 @@ Your agent will be able to perform:
 - Tag management
 - And more...
 
-## Next Steps
-
-1. Fill in your custom system prompt in `system_prompt.md`
-2. Follow the setup instructions to install the git MCP tool
-3. Deploy your agent using your preferred platform
-4. Start using your custom AI agent with git capabilities!
-
-## Support
-
-For issues with:
-- **MCP Git Tool**: Check the [official MCP servers repository](https://github.com/modelcontextprotocol/servers)
-- **Agent Configuration**: Review the setup instructions and configuration files
-
----
-- Repository status analysis (`git_status`) for ticket number extraction
-- Staged changes examination (`git_diff_staged`) - primary analysis command
-- Unstaged changes review (`git_diff`) when needed
-- File staging operations (`git_add`) if requested
-- Commit operations with properly formatted messages
 ## Agent Behavior
 
 The agent is specifically designed to:
@@ -186,20 +165,25 @@ The agent is specifically designed to:
 - **Follow strict format**: Adheres to `<Type>/<Severity>: <ticket> - <description>` format
 - **Wrap text properly**: Maintains 70-character line limit (except code snippets)
 - **Confirm actions**: Never commits without explicit user approval
-- **Use English only**: All commit messages are in Englishory analysis for context1. Follow the setup instructions to install the git MCP tool
-2. Deploy your agent using your preferred platform
-3. Navigate to any git repository in your CLI
-4. Start using your Git Commit Message Generator Agent!
-1. Follow the setup instructions to install the git MCP tool
-2. Deploy your agent using your preferred platform
-3. Navigate to any git repository in your CLI
-4. Start using your Git Commit Message Generator Agent!
+- **Use English only**: All commit messages are in English
 - **Analyze before suggesting**: Always examines actual changes before generating messages
 - **Follow conventions**: Strictly adheres to conventional commit standards
 - **Provide options**: Offers multiple commit message suggestions when appropriate
 - **Explain reasoning**: Describes why specific commit types and scopes were chosen
-- **Confirm actions**: Never commits without explicit user approval
-- **Handle complexity**: Can suggest splitting large changes into multiple focused commits- **Commit Standards**: Refer to [Conventional Commits](https://www.conventionalcommits.org/)*Generate better commit messages with AI! 🤖📝*- **Commit Standards**: Refer to the commit format specifications in `system_prompt.md`
+
+## Next Steps
+
+1. Follow the setup instructions to install the git MCP tool
+2. Deploy your agent using your preferred platform
+3. Navigate to any git repository in your CLI
+4. Start using your Git Commit Message Generator Agent!
+
+## Support
+
+For issues with:
+- **MCP Git Tool**: Check the [official MCP servers repository](https://github.com/modelcontextprotocol/servers)
+- **Agent Configuration**: Review the setup instructions and configuration files
+- **Commit Standards**: Refer to the commit format specifications in `system_prompt.md`
 
 ---
 
