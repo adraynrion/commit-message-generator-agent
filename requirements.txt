@@ -1,0 +1,5 @@
+# Git Commit Message Generator Agent - Python Dependencies
+# Install in virtual environment: pip install -r requirements.txt
+
+# MCP tool runner for git operations
+uvx>=0.0.1

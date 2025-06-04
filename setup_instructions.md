@@ -13,18 +13,38 @@ This directory contains the configuration for a specialized AI Agent that analyz
 ## Setup Steps
 
 ### 1. Install Prerequisites
-Install the required dependencies:
+Run the installation script to set up the virtual environment and dependencies:
 ```bash
-# Install uvx (Python package runner)
-pip install uvx
+# Run the installation script
+./install.sh
+```
+
+Or manually set up the virtual environment:
+```bash
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate virtual environment (Linux/macOS)
+source .venv/bin/activate
+
+# Activate virtual environment (Windows)
+.venv\Scripts\activate
+
+# Install dependencies from requirements.txt
+pip install --upgrade pip
+pip install -r requirements.txt
 
 # Verify git installation
 git --version
 ```
 
 ### 2. Test MCP Git Server
-Verify the MCP git server is accessible:
+Verify the MCP git server is accessible (ensure virtual environment is activated):
 ```bash
+# Activate virtual environment first
+source .venv/bin/activate
+
+# Test MCP git server
 uvx mcp-server-git
 ```
 
@@ -123,13 +143,9 @@ You can extend this setup by:
 - Provide ticket numbers explicitly if branch name doesn't contain them
 - Review generated messages before confirming
 
-
-
 ### Repository Requirements
 - Ensure you're in a git repository
 - Have appropriate git permissions
-
-
 - Stage files before requesting commit message generation- Follow branch naming conventions for ticket extraction
 - Use English for all commit-related communication
 
@@ -141,6 +157,7 @@ You can extend this setup by:
 4. **Strict format adherence**: Follows exact `<Type>/<Severity>: <ticket> - <description>` format
 5. **English only**: All commit messages generated in English
 6. **70-character wrapping**: Maintains proper line length (except code snippets)
+
 ## Troubleshooting
 
 ### Common Issues
@@ -154,11 +171,18 @@ You can extend this setup by:
 2. Test MCP git server: `uvx mcp-server-git`
 3. Verify git commands manually: `git status`, `git diff --staged`
 4. Check agent configuration includes proper MCP setup
-5. Test with a simple file change first
+1. Ensure virtual environment is activated: `source .venv/bin/activate`
+2. Test uvx installation: `uvx --version`
+3. Test MCP git server: `uvx mcp-server-git`
+4. Verify git commands manually: `git status`, `git diff --staged`
+5. Check agent configuration includes proper MCP setup
+6. Test with a simple file change first
 
-### MCP Configuration Details
-The agent uses this MCP configuration:
-- **Command**: `uvx` (Python package runner)
+### Virtual Environment Notes
+- Always activate the virtual environment before using the agent: `source .venv/bin/activate`
+- The virtual environment isolates Python dependencies from your system
+- Deactivate when done: `deactivate`
+- Virtual environment location: `.venv/`
 - **Args**: `["mcp-server-git"]` (MCP git server package)
 - **Primary operations**: `git_status`, `git_diff_staged`, `git_commit`
 - **No manual installation**: uvx handles package management automatically

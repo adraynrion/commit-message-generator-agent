@@ -10,28 +10,51 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Check if pip is installed
-if ! command -v pip &> /dev/null; then
-    echo "❌ pip is required but not installed."
-    exit 1
-fi
-
 # Check if git is installed
 if ! command -v git &> /dev/null; then
     echo "❌ Git is required but not installed."
     exit 1
 fi
 
-echo "✅ Python, pip, and git are installed"
+echo "✅ Python and git are installed"
 
-# Install uvx
-echo "📦 Installing uvx..."
-pip install uvx
+# Create virtual environment if it doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "🔧 Creating Python virtual environment..."
+    python3 -m venv .venv
+    if [ $? -eq 0 ]; then
+        echo "✅ Virtual environment created successfully"
+    else
+        echo "❌ Failed to create virtual environment"
+        exit 1
+    fi
+else
+    echo "✅ Virtual environment already exists"
+fi
+
+# Activate virtual environment
+echo "🔌 Activating virtual environment..."
+source .venv/bin/activate
 
 if [ $? -eq 0 ]; then
-    echo "✅ uvx installed successfully"
+    echo "✅ Virtual environment activated"
 else
-    echo "❌ Failed to install uvx"
+    echo "❌ Failed to activate virtual environment"
+    exit 1
+fi
+
+# Upgrade pip in virtual environment
+echo "⬆️ Upgrading pip..."
+pip install --upgrade pip
+
+# Install dependencies from requirements.txt
+echo "📦 Installing dependencies from requirements.txt..."
+pip install -r requirements.txt
+
+if [ $? -eq 0 ]; then
+    echo "✅ Dependencies installed successfully in virtual environment"
+else
+    echo "❌ Failed to install dependencies"
     exit 1
 fi
 

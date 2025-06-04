@@ -4,23 +4,40 @@ This repository contains the configuration and setup files for a specialized AI 
 
 ## Quick Start
 
-### Option 1: Automated Installation
+### Option 1: Automated Installation (Recommended)
 ```bash
-# Run the installation script
+# Run the installation script (creates virtual environment)
 chmod +x install.sh
 ./install.sh
+
+# Activate the environment when needed
+source .venv/bin/activate
 ```
 
 ### Option 2: Manual Installation
 ```bash
-# Install prerequisites
-pip install uvx
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate virtual environment (Linux/macOS)
+source .venv/bin/activate
+
+# Activate virtual environment (Windows)
+.venv\Scripts\activate
+
+# Install dependencies from requirements.txt
+pip install --upgrade pip
+pip install -r requirements.txt
 
 # Test MCP server
 uvx mcp-server-git --help
 
 # Deploy your agent using agent_config.json
 ```
+
+### Virtual Environment Management
+- **Activate**: `source .venv/bin/activate` (Linux/macOS) or `.venv\Scripts\activate` (Windows)
+- **Deactivate**: `deactivate`
 
 ## Features
 
@@ -104,14 +121,19 @@ git add .
 ## Files
 
 | File | Description |
-# 1. Use git_diff_staged to analyze changes
-# 2. Extract ticket number from branch or ask for it
+
+
 |------|-------------|
 | `agent_config.json` | Complete agent configuration with MCP setup |
 | `mcp_config.json` | Standalone MCP configuration for git tool |
 | `system_prompt.md` | Complete system prompt for commit message generation |
 | `mcp_setup.md` | Git MCP tool setup instructions using uvx |
-| `setup_instructions.md` | Complete setup guide | Example Interaction
+| `setup_instructions.md` | Complete setup guide |
+| `install.sh` | Automated installation script with virtual environment |
+| `requirements.txt` | Python dependencies for the project |
+| `.gitignore` | Git ignore file excluding virtual environment |
+
+## Example Interaction
 ```
 User: "Please commit my changes"
 Agent: "Let me analyze the staged changes using git_diff_staged..."
@@ -121,7 +143,8 @@ Agent: "FEATURE/MEDIUM: AB-1234 - add OAuth2 authentication support
 Implement OAuth2 flow with Google and GitHub providers including
 user session management and redirect handling for authentication
 callbacks."
-Agent: "Shall I proceed with this commit?"uctions |
+Agent: "Shall I proceed with this commit?"
+```
 | `setup_instructions.md` | Complete setup guide |
 
 ## Git Operations Available
