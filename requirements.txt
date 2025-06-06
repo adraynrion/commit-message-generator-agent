@@ -38,3 +38,6 @@ autotyping>=24.9.0  # For adding type hints
 libcst>=1.1.0  # Required by autotyping
 docformatter>=1.7.0,<2.0.0  # For docstring formatting
 pycln>=2.4.0,<3.0.0  # For removing unused imports
+
+# Build dependencies
+pyinstaller>=6.14.0,<7.0.0  # For building the CLI

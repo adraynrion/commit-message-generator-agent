@@ -7,8 +7,8 @@ from typing import Optional
 
 import click
 
-from .commit_generator import CommitMessageGenerator
-from .config import LoggingConfig, setup_logging
+from commit_message_generator.commit_generator import CommitMessageGenerator
+from commit_message_generator.config import LoggingConfig, setup_logging
 
 # Configure basic logging initially (will be overridden by config)
 logging.basicConfig(

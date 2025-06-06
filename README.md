@@ -125,6 +125,49 @@ commit-msg-gen generate --config ./custom-config.yaml
 commit-msg-gen --help
 ```
 
+## 🔌 Build
+
+### Prerequisites
+
+1. Install Ubuntu dependencies :
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential \
+    libffi-dev \
+    libssl-dev \
+    zlib1g-dev \
+    liblzma-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libncursesw5-dev \
+    tk-dev \
+    libgdbm-dev \
+    libc6-dev \
+    libgdbm-compat-dev
+```
+
+2. Use pyenv and install python 3.11 :
+```bash
+pyenv install 3.11.9
+pyenv global 3.11.9
+```
+
+3. Generate venv and install dependencies :
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+4. Build the CLI using PyInstaller:
+```bash
+pyinstaller commit_message_generator.spec
+```
+
+This will create a standalone executable in the `dist` directory.
+
 ## 🔌 API
 
 You can also use the generator programmatically:

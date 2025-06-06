@@ -5,8 +5,8 @@ from typing import Any, Dict, Optional
 
 from pydantic_ai import Agent
 
-from .config import GeneratorConfig
-from .models import CommitMessageResponse
+from commit_message_generator.config import GeneratorConfig
+from commit_message_generator.models import CommitMessageResponse
 
 # Configure logging
 logger = logging.getLogger(__name__)
