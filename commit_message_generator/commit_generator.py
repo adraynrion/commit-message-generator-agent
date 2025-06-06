@@ -1,9 +1,17 @@
-"""Commit message generator implementation using Pydantic AI."""
+"""Commit message generator implementation using Pydantic AI with Langfuse integration."""
 
 import logging
+import os
 from typing import Any, Dict, Optional
 
 from pydantic_ai import Agent
+
+# Try to import Langfuse, but make it optional
+try:
+    from langfuse import Langfuse
+    LANG_FUSE_AVAILABLE = True
+except ImportError:
+    LANG_FUSE_AVAILABLE = False
 
 from commit_message_generator.config import GeneratorConfig
 from commit_message_generator.models import CommitMessageResponse
@@ -61,8 +69,57 @@ class CommitMessageGenerator:
         self.system_prompt = self._build_system_prompt(system_prompt)
         self.ai = self._init_ai()
 
-    def _init_ai(self):
-        """Initialize the AI client with configuration."""
+    def _init_ai(self) -> Agent:
+        """Initialize the AI client with configuration and Langfuse integration if enabled."""
+        # Initialize Langfuse if enabled and available
+        logger.debug(f"Checking Langfuse configuration: hasattr(self.config, 'langfuse')={hasattr(self.config, 'langfuse')}")
+        if hasattr(self.config, 'langfuse'):
+            logger.debug(f"Langfuse config: {self.config.langfuse}")
+            logger.debug(f"Langfuse enabled: {getattr(self.config.langfuse, 'enabled', False)}")
+
+        if hasattr(self.config, 'langfuse') and self.config.langfuse and getattr(self.config.langfuse, 'enabled', False) and LANG_FUSE_AVAILABLE:
+            try:
+                # Get credentials from config or environment variables
+                public_key = (
+                    self.config.langfuse.public_key or
+                    os.getenv("LANGFUSE_PUBLIC_KEY")
+                )
+                secret_key = (
+                    self.config.langfuse.secret_key or
+                    os.getenv("LANGFUSE_SECRET_KEY")
+                )
+                host = (
+                    self.config.langfuse.host or
+                    os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+                )
+
+                if not public_key or not secret_key:
+                    logger.warning(
+                        "Langfuse is enabled but missing required credentials. "
+                        "Please set public_key and secret_key in the config or environment variables."
+                    )
+                else:
+                    # Initialize Langfuse client
+                    self.langfuse = Langfuse(
+                        public_key=public_key,
+                        secret_key=secret_key,
+                        host=host,
+                    )
+
+                    # Test the connection
+                    try:
+                        self.langfuse.auth_check()
+                        logger.info("Langfuse tracing initialized successfully")
+                    except Exception as auth_error:
+                        logger.warning(f"Langfuse auth check failed: {str(auth_error)}")
+                        if hasattr(self, 'langfuse'):
+                            delattr(self, 'langfuse')
+
+            except Exception as e:
+                logger.warning(f"Failed to initialize Langfuse: {str(e)}")
+                if hasattr(self, 'langfuse'):
+                    delattr(self, 'langfuse')
+
         try:
             ai_config = self.config.ai
             logger.debug(f"Initializing AI with config: {ai_config}")
@@ -232,17 +289,63 @@ class CommitMessageGenerator:
             logger.debug(f"System prompt length: {len(self.system_prompt)}")
             logger.debug(f"User prompt length: {len(user_prompt)}")
 
-            # Call the AI to generate the commit message
+            # Call the AI to generate the commit message with Langfuse tracing if enabled
             logger.debug("Calling AI...")
             try:
-                response = await self.ai.run(
-                    system_prompt=self.system_prompt,
-                    user_prompt=user_prompt,
-                    output_model=CommitMessageResponse,
-                    model_name=self.config.ai.model_name,
-                    temperature=self.config.ai.temperature,
-                    max_tokens=self.config.ai.max_tokens,
-                )
+                if self.config.langfuse.enabled and LANG_FUSE_AVAILABLE and hasattr(self, 'langfuse'):
+                    # Create a new trace for this generation
+                    trace = self.langfuse.trace(
+                        name="generate_commit_message",
+                        input={
+                            "system_prompt": self.system_prompt[:1000] + "..." if len(self.system_prompt) > 1000 else self.system_prompt,
+                            "user_prompt": user_prompt[:1000] + "..." if len(user_prompt) > 1000 else user_prompt,
+                            "model_name": self.config.ai.model_name,
+                            "temperature": self.config.ai.temperature,
+                            "max_tokens": self.config.ai.max_tokens,
+                        }
+                    )
+
+                    # Create a span for the LLM call
+                    generation = trace.generation(
+                        name="llm_call",
+                        model=self.config.ai.model_name,
+                        model_parameters={
+                            "temperature": self.config.ai.temperature,
+                            "max_tokens": self.config.ai.max_tokens,
+                        }
+                    )
+
+                    try:
+                        response = await self.ai.run(
+                            system_prompt=self.system_prompt,
+                            user_prompt=user_prompt,
+                            output_model=CommitMessageResponse,
+                            model_name=self.config.ai.model_name,
+                            temperature=self.config.ai.temperature,
+                            max_tokens=self.config.ai.max_tokens,
+                        )
+
+                        if hasattr(response, 'output') and response.output:
+                            output_str = str(response.output)
+                            generation.end(
+                                output=output_str[:1000] + "..." if len(output_str) > 1000 else output_str
+                            )
+                        return response
+
+                    except Exception as e:
+                        generation.end(error=str(e))
+                        raise
+                else:
+                    # Fallback to standard call if Langfuse is not enabled or available
+                    response = await self.ai.run(
+                        system_prompt=self.system_prompt,
+                        user_prompt=user_prompt,
+                        output_model=CommitMessageResponse,
+                        model_name=self.config.ai.model_name,
+                        temperature=self.config.ai.temperature,
+                        max_tokens=self.config.ai.max_tokens,
+                    )
+
                 logger.debug("Successfully received response from AI")
             except Exception as e:
                 logger.error(f"Error calling AI: {str(e)}")
@@ -318,7 +421,7 @@ class CommitMessageGenerator:
                     prompt_parts.append("")  # Add a blank line after context
 
             prompt_parts.append(
-                "Please generate a commit message following the specified format and guidelines."
+                "You must generate a commit message ONLY following the specified format and guidelines."
             )
 
             prompt = "\n".join(prompt_parts)
@@ -352,26 +455,26 @@ class CommitMessageGenerator:
 
         Returns:
             Configured CommitMessageGenerator instance.
-
         """
+        from commit_message_generator.config import load_config_from_file
+
         try:
-            from pathlib import Path
+            config = load_config_from_file(config_path)
 
-            import yaml
+            # Log Langfuse configuration status
+            if config and hasattr(config, 'langfuse'):
+                if config.langfuse.enabled:
+                    if LANG_FUSE_AVAILABLE:
+                        logger.info("Langfuse tracing is enabled")
+                    else:
+                        logger.warning(
+                            "Langfuse is enabled in config but langfuse package is not installed. "
+                            "Install with: pip install langfuse"
+                        )
+                else:
+                    logger.debug("Langfuse tracing is disabled in config")
 
-            path = Path(config_path)
-            if not path.exists():
-                raise FileNotFoundError(f"Config file not found: {config_path}")
-
-            with open(path, "r", encoding="utf-8") as f:
-                if path.suffix.lower() in (".yaml", ".yml"):
-                    config_data = yaml.safe_load(f)
-                else:  # Assume JSON
-                    import json
-
-                    config_data = json.load(f)
-
-            return cls(config=GeneratorConfig(**config_data))
+            return cls(config=config)
 
         except Exception as e:
             logger.warning(
@@ -402,10 +505,22 @@ def generate_commit_message(
     """
     import asyncio
 
-    generator = CommitMessageGenerator.create(
-        diff=diff, ticket=ticket, system_prompt=system_prompt
-    )
+    # Create the generator with the config file if provided
+    if config_path:
+        generator = CommitMessageGenerator.from_config_file(config_path)
+        # Apply any overrides
+        if system_prompt:
+            generator.system_prompt = system_prompt
+    else:
+        generator = CommitMessageGenerator(system_prompt=system_prompt)
 
     # Run the async generate method in an event loop
     loop = asyncio.get_event_loop()
-    return loop.run_until_complete(generator.generate())
+    try:
+        return loop.run_until_complete(
+            generator.generate_commit_message(diff=diff, ticket=ticket)
+        )
+    finally:
+        # Ensure Langfuse flushes any pending events
+        if hasattr(generator, 'langfuse') and generator.langfuse:
+            loop.run_until_complete(generator.langfuse.flush())

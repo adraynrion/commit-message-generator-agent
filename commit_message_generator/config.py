@@ -90,6 +90,24 @@ class CommitMessageConfig(BaseModel):
     )
 
 
+class LangfuseConfig(BaseModel):
+    """Configuration for Langfuse tracing."""
+    
+    enabled: bool = Field(
+        False, description="Whether to enable Langfuse tracing"
+    )
+    public_key: str = Field(
+        "", description="Langfuse public key"
+    )
+    secret_key: str = Field(
+        "", description="Langfuse secret key"
+    )
+    host: str = Field(
+        "https://cloud.langfuse.com", 
+        description="Langfuse host URL"
+    )
+
+
 class GeneratorConfig(BaseModel):
     """Top-level configuration for the commit message generator."""
 
@@ -99,6 +117,10 @@ class GeneratorConfig(BaseModel):
     commit: CommitMessageConfig = Field(
         default_factory=CommitMessageConfig,
         description="Commit message generation settings",
+    )
+    langfuse: LangfuseConfig = Field(
+        default_factory=LangfuseConfig,
+        description="Langfuse tracing configuration",
     )
     logging: LoggingConfig = Field(
         default_factory=LoggingConfig,
@@ -187,36 +209,46 @@ def load_config_from_file(file_path: str) -> Optional[GeneratorConfig]:
     Raises:
         ValueError: If the file has an unsupported extension or is invalid.
     """
-    import os
-    from pathlib import Path
-
-    if not os.path.isfile(file_path):
+    logger = logging.getLogger(__name__)
+    path = Path(file_path)
+    logger.debug(f"Loading config from: {path.absolute()}")
+    
+    if not path.exists():
+        logger.warning(f"Config file not found: {path.absolute()}")
         return None
 
-    file_ext = Path(file_path).suffix.lower()
-
+    # Load the config file
     try:
-        if file_ext in ('.yaml', '.yml'):
+        if path.suffix.lower() in ('.yaml', '.yml'):
             import yaml
-            with open(file_path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 config_data = yaml.safe_load(f)
-        elif file_ext == '.json':
+                logger.debug(f"Loaded YAML config: {config_data}")
+        elif path.suffix.lower() == '.json':
             import json
-            with open(file_path, 'r') as f:
+            with open(path, 'r', encoding='utf-8') as f:
                 config_data = json.load(f)
+                logger.debug(f"Loaded JSON config: {config_data}")
         else:
-            raise ValueError(f"Unsupported config file format: {file_ext}")
+            raise ValueError(f"Unsupported config file format: {path.suffix}")
 
-        # Initialize config
+        if not config_data:
+            logger.warning(f"Empty config file: {path.absolute()}")
+            return None
+            
+        logger.debug(f"Raw config data: {config_data}")
+        
+        # Ensure all sections exist in the config data
+        if 'langfuse' in config_data:
+            logger.debug(f"Langfuse config found: {config_data['langfuse']}")
+        else:
+            logger.debug("No Langfuse config found in file")
+
+        # Convert the config data to a GeneratorConfig object
         config = GeneratorConfig(**config_data)
-
-        # Set up logging based on config
-        setup_logging(config.logging)
-
+        logger.debug(f"Successfully loaded config: {config}")
         return config
+
     except Exception as e:
-        # Set up basic logging to capture the error
-        logging.basicConfig(level=logging.ERROR, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        logger = logging.getLogger(__name__)
-        logger.error(f"Failed to load config from {file_path}: {str(e)}")
-        raise ValueError(f"Failed to load config from {file_path}: {str(e)}")
+        logger.error(f"Error loading config file {file_path}: {str(e)}", exc_info=True)
+        raise ValueError(f"Error loading config file {file_path}: {str(e)}")

@@ -212,7 +212,7 @@ async def async_generate(
                 )
             raise
 
-        print_commit_message(result)
+        print_commit_message(result.output)
 
     except Exception as e:
         click.echo(f"An error occurred: {str(e)}", err=True)

@@ -75,3 +75,10 @@ logging:
   level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   file: "commit_gen.log"  # Leave empty to log to console only
+
+# Langfuse configuration for tracing and observability
+langfuse:
+  enabled: false  # Set to true to enable Langfuse tracing
+  public_key: ""  # Or set via LANGFUSE_PUBLIC_KEY env var
+  secret_key: ""  # Or set via LANGFUSE_SECRET_KEY env var
+  host: "https://cloud.langfuse.com"  # Or set via LANGFUSE_HOST env var
