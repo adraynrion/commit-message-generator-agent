@@ -76,6 +76,8 @@ class CommitMessageGenerator:
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
+            logger.debug(f"Using model: {ai_config.model_name}")
+
             # Initialize the AI agent with explicit API key
             agent = Agent(
                 model=ai_config.model_name,

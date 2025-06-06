@@ -81,7 +81,7 @@ Example configuration (see [default_config.yaml](commit_message_generator/defaul
 ```yaml
 # AI model configuration
 ai:
-  model_name: "gpt-4-turbo-preview"
+  model_name: "gpt-4o-mini"
   temperature: 0.3
   max_tokens: 500
 

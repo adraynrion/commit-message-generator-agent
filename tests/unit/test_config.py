@@ -15,7 +15,7 @@ from commit_message_generator.config import (
 def test_ai_model_config_defaults() -> None:
     """Test AIModelConfig with default values."""
     config = AIModelConfig()
-    assert config.model_name == "gpt-4-turbo-preview"
+    assert config.model_name == "gpt-4o-mini"
     assert config.temperature == 0.3
     assert config.max_tokens == 500
     assert config.top_p == 1.0

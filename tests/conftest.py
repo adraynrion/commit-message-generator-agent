@@ -23,7 +23,7 @@ index 1234567..89abcde 100644
 +++ b/README.md
 @@ -1,5 +1,8 @@
  # Project
- 
+
 +## New Feature
 +Added a new feature to the project.
 +
@@ -47,7 +47,7 @@ def sample_config() -> Dict[str, Any]:
     """Return a sample configuration dictionary."""
     return {
         "ai": {
-            "model_name": "gpt-4-turbo-preview",
+            "model_name": "gpt-4o-mini",
             "temperature": 0.3,
             "max_tokens": 500,
         },

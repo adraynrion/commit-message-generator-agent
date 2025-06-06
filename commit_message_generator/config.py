@@ -30,7 +30,7 @@ class AIModelConfig(BaseModel):
     """Configuration for the AI model."""
 
     model_name: str = Field(
-        "gpt-4-turbo-preview", description="Name of the AI model to use"
+        ..., description="Name of the AI model to use (e.g., gpt-4o-mini)"
     )
     temperature: float = Field(
         0.2, ge=0.0, le=2.0, description="Temperature for text generation"
@@ -83,7 +83,7 @@ class GeneratorConfig(BaseModel):
         json_schema_extra = {
             "example": {
                 "ai": {
-                    "model_name": "gpt-4-turbo-preview",
+                    "model_name": "gpt-4o-mini",
                     "temperature": 0.2,
                     "max_tokens": 500,
                     "top_p": 1.0,

@@ -74,6 +74,26 @@ def generate(
     """
     asyncio.run(async_generate(ticket, repo, dry_run, verbose))
 
+def find_config_file() -> Optional[str]:
+    """Find the configuration file in standard locations.
+
+    Returns:
+        Path to the config file if found, None otherwise.
+    """
+    from pathlib import Path
+
+    # Standard config file locations in order of precedence
+    config_paths = [
+        Path.cwd() / "config.yaml",  # ./config.yaml
+        Path.home() / ".config" / "commit-msg-gen" / "config.yaml",  # ~/.config/commit-msg-gen/config.yaml
+        Path("/etc/commit-msg-gen/config.yaml"),  # /etc/commit-msg-gen/config.yaml
+    ]
+
+    for path in config_paths:
+        if path.exists():
+            return str(path)
+    return None
+
 async def async_generate(
     ticket: Optional[str] = None,
     repo: Optional[str] = None,
@@ -89,8 +109,21 @@ async def async_generate(
     if verbose:
         click.echo("Initializing commit message generator...")
 
+    # Load configuration
+    config_path = find_config_file()
+    if config_path is None:
+        raise click.UsageError("No configuration file found. Please create a config.yaml file in one of the standard locations.")
+
+    if verbose:
+        click.echo(f"Using configuration from: {config_path}")
+
+    from commit_message_generator.config import load_config_from_file
+    config = load_config_from_file(config_path)
+    if config is None:
+        raise click.UsageError(f"Failed to load configuration from {config_path}")
+
     try:
-        generator = CommitMessageGenerator()
+        generator = CommitMessageGenerator(config=config)
 
         if verbose:
             click.echo("Analyzing staged changes...")
