@@ -56,14 +56,10 @@ def cli() -> None:
     type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
     help="Path to the git repository (default: current directory)",
 )
-@click.option(
-    "--dry-run", is_flag=True, help="Show what would be done without making any changes"
-)
 @click.option("--verbose", "-v", is_flag=True, help="Show more detailed output")
 def generate(
     ticket: Optional[str] = None,
     repo: Optional[str] = None,
-    dry_run: bool = False,
     verbose: bool = False,
 ) -> None:
     """Generate a commit message based on staged changes.
@@ -72,7 +68,7 @@ def generate(
     generates a conventional commit message based on the changes found.
 
     """
-    asyncio.run(async_generate(ticket, repo, dry_run, verbose))
+    asyncio.run(async_generate(ticket, repo, verbose))
 
 def find_config_file() -> Optional[str]:
     """Find the configuration file in standard locations.
@@ -97,7 +93,6 @@ def find_config_file() -> Optional[str]:
 async def async_generate(
     ticket: Optional[str] = None,
     repo: Optional[str] = None,
-    dry_run: bool = False,
     verbose: bool = False,
 ) -> None:
     """Generate a commit message based on staged changes.
@@ -171,17 +166,7 @@ async def async_generate(
                 )
             raise
 
-        if dry_run:
-            click.echo("\n[DRY RUN] Generated commit message (not committed):")
-            print_commit_message(result)
-            return
-
         print_commit_message(result)
-
-        if click.confirm("\nWould you like to proceed with this commit message?"):
-            click.echo("Commit created successfully!")
-        else:
-            click.echo("Commit cancelled.")
 
     except Exception as e:
         click.echo(f"An error occurred: {str(e)}", err=True)
