@@ -1,6 +1,8 @@
 """Configuration models for the commit message generator."""
 
+import logging
 from enum import Enum
+from pathlib import Path
 from typing import Dict, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -48,6 +50,29 @@ class AIModelConfig(BaseModel):
         return v
 
 
+class LoggingConfig(BaseModel):
+    """Configuration for logging."""
+
+    level: str = Field("INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    format: str = Field(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        description="Log message format",
+    )
+    file: Optional[str] = Field(
+        None,
+        description="Path to log file. If None or empty, logs to console only",
+    )
+
+    @field_validator("level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        """Validate that the logging level is valid."""
+        v_upper = v.upper()
+        if v_upper not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+            raise ValueError(f"Invalid log level: {v}. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL")
+        return v_upper
+
+
 class CommitMessageConfig(BaseModel):
     """Configuration for commit message generation."""
 
@@ -75,6 +100,10 @@ class GeneratorConfig(BaseModel):
         default_factory=CommitMessageConfig,
         description="Commit message generation settings",
     )
+    logging: LoggingConfig = Field(
+        default_factory=LoggingConfig,
+        description="Logging configuration",
+    )
     custom_prompts: Dict[str, str] = Field(
         default_factory=dict, description="Custom prompts for different commit types"
     )
@@ -94,12 +123,56 @@ class GeneratorConfig(BaseModel):
                     "default_severity": "MEDIUM",
                     "max_line_length": 70,
                 },
+                "logging": {
+                    "level": "INFO",
+                    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                    "file": "commit_gen.log"
+                },
                 "custom_prompts": {
                     "FEATURE": "You are adding a new feature...",
                     "BUGFIX": "You are fixing a bug...",
                 },
             }
         }
+
+
+def setup_logging(logging_config: LoggingConfig) -> None:
+    """Configure logging based on the provided configuration.
+
+    Args:
+        logging_config: Logging configuration
+    """
+    # Configure root logger
+    logger = logging.getLogger()
+    logger.setLevel(logging_config.level)
+
+    # Clear any existing handlers
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+
+    # Create formatter
+    formatter = logging.Formatter(logging_config.format)
+
+    # Add console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    # Add file handler if file path is specified
+    if logging_config.file:
+        try:
+            # Create directory if it doesn't exist
+            log_file = Path(logging_config.file).expanduser().resolve()
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+            logger.debug(f"Logging to file: {log_file}")
+        except Exception as e:
+            logger.warning(f"Failed to set up file logging: {e}")
+
+    logger.debug(f"Logging configured with level: {logging_config.level}")
 
 
 def load_config_from_file(file_path: str) -> Optional[GeneratorConfig]:
@@ -113,30 +186,37 @@ def load_config_from_file(file_path: str) -> Optional[GeneratorConfig]:
 
     Raises:
         ValueError: If the file has an unsupported extension or is invalid.
-
     """
-    import json
+    import os
     from pathlib import Path
 
-    import yaml
-
-    path = Path(file_path)
-    if not path.exists():
+    if not os.path.isfile(file_path):
         return None
 
-    content = path.read_text(encoding="utf-8")
+    file_ext = Path(file_path).suffix.lower()
 
     try:
-        if path.suffix.lower() in (".yaml", ".yml"):
-            config_dict = yaml.safe_load(content)
-        elif path.suffix.lower() == ".json":
-            config_dict = json.loads(content)
+        if file_ext in ('.yaml', '.yml'):
+            import yaml
+            with open(file_path, 'r') as f:
+                config_data = yaml.safe_load(f)
+        elif file_ext == '.json':
+            import json
+            with open(file_path, 'r') as f:
+                config_data = json.load(f)
         else:
-            raise ValueError(f"Unsupported config file format: {path.suffix}")
+            raise ValueError(f"Unsupported config file format: {file_ext}")
 
-        return GeneratorConfig(**config_dict)
+        # Initialize config
+        config = GeneratorConfig(**config_data)
 
-    except (yaml.YAMLError, json.JSONDecodeError) as e:
-        raise ValueError(f"Invalid configuration file {file_path}: {str(e)}")
+        # Set up logging based on config
+        setup_logging(config.logging)
+
+        return config
     except Exception as e:
-        raise ValueError(f"Error loading configuration from {file_path}: {str(e)}")
+        # Set up basic logging to capture the error
+        logging.basicConfig(level=logging.ERROR, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to load config from {file_path}: {str(e)}")
+        raise ValueError(f"Failed to load config from {file_path}: {str(e)}")

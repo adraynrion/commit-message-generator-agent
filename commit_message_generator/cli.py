@@ -2,13 +2,20 @@
 
 import asyncio
 import logging
+import sys
 from typing import Optional
 
 import click
 
 from .commit_generator import CommitMessageGenerator
+from .config import LoggingConfig, setup_logging
 
-# Configure logging
+# Configure basic logging initially (will be overridden by config)
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stderr
+)
 logger = logging.getLogger(__name__)
 
 
@@ -90,6 +97,23 @@ def find_config_file() -> Optional[str]:
             return str(path)
     return None
 
+def setup_verbose_logging(verbose: bool) -> None:
+    """Set up verbose logging if requested.
+
+    Args:
+        verbose: Whether to enable verbose logging
+    """
+    if verbose:
+        # Set root logger to DEBUG level
+        root_logger = logging.getLogger()
+        root_logger.setLevel(logging.DEBUG)
+
+        # Update all existing handlers to use DEBUG level
+        for handler in root_logger.handlers:
+            handler.setLevel(logging.DEBUG)
+
+    logger.debug("Verbose logging enabled")
+
 async def async_generate(
     ticket: Optional[str] = None,
     repo: Optional[str] = None,
@@ -97,25 +121,47 @@ async def async_generate(
 ) -> None:
     """Generate a commit message based on staged changes.
 
-    This command analyzes the currently staged changes in your git repository and
-    generates a conventional commit message based on the changes found.
+    This is the async implementation of the generate command.
 
+    Args:
+        ticket: Optional ticket number to include in the commit message
+        repo: Optional path to the git repository
+        verbose: Whether to show verbose output
     """
     if verbose:
         click.echo("Initializing commit message generator...")
+        setup_verbose_logging(verbose)
 
     # Load configuration
     config_path = find_config_file()
     if config_path is None:
-        raise click.UsageError("No configuration file found. Please create a config.yaml file in one of the standard locations.")
+        # If no config file, use default logging
+        logger.warning("No configuration file found. Using default settings.")
+        setup_logging(LoggingConfig())
+        config = None
+    else:
+        if verbose:
+            click.echo(f"Using configuration from: {config_path}")
 
-    if verbose:
-        click.echo(f"Using configuration from: {config_path}")
+        from commit_message_generator.config import load_config_from_file
+        try:
+            config = load_config_from_file(config_path)
+            if config is None:
+                logger.warning(f"Failed to load configuration from {config_path}. Using default settings.")
+                config = None
+        except Exception as e:
+            logger.error(f"Error loading configuration: {e}")
+            config = None
 
-    from commit_message_generator.config import load_config_from_file
-    config = load_config_from_file(config_path)
+    # If config loading failed, use default config
     if config is None:
-        raise click.UsageError(f"Failed to load configuration from {config_path}")
+        from commit_message_generator.config import GeneratorConfig
+        config = GeneratorConfig()
+        logger.debug("Using default configuration")
+
+    # Set up logging from config
+    if hasattr(config, 'logging') and config.logging:
+        setup_logging(config.logging)
 
     try:
         generator = CommitMessageGenerator(config=config)
