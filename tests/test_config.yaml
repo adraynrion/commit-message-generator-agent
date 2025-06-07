@@ -1,0 +1,20 @@
+ai:
+  model_name: "gpt-4o-mini"
+  temperature: 0.2
+  max_tokens: 500
+  top_p: 1.0
+  max_attempts: 3
+
+commit:
+  max_line_length: 80
+
+langfuse:
+  enabled: false
+  public_key: ""
+  secret_key: ""
+  host: "https://cloud.langfuse.com"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "commit_gen.log"

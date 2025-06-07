@@ -22,6 +22,11 @@ def test_cli_help(runner) -> None:
 
 def test_generate_commit_message(runner, tmp_path) -> None:
     from unittest.mock import AsyncMock, patch
+    from pathlib import Path
+
+    # Create a test config file
+    test_config_path = Path(__file__).parent.parent / "test_config.yaml"
+    assert test_config_path.exists(), f"Test config file not found at {test_config_path}"
 
     with patch(
         "commit_message_generator.cli.CommitMessageGenerator"
@@ -31,6 +36,9 @@ def test_generate_commit_message(runner, tmp_path) -> None:
             "diff --git a/file.txt b/file.txt\n+++ b/file.txt\n+new line\n",
             0,
         ),
+    ), patch(
+        "commit_message_generator.cli.find_config_file",
+        return_value=str(test_config_path)
     ), patch(
         "logging.shutdown", lambda: None
     ):
