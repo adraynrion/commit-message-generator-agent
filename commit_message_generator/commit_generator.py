@@ -1,49 +1,19 @@
-"""Commit message generator implementation using Pydantic AI with Langfuse integration."""
+"""Commit message generator implementation using Pydantic AI with logfire/langfuse
+integration."""
 
 import logging
-import os
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import List, Optional
 
 from pydantic_ai import Agent
 
-# Try to import Langfuse, but make it optional
-try:
-    from langfuse import Langfuse
-    LANG_FUSE_AVAILABLE = True
-except ImportError:
-    LANG_FUSE_AVAILABLE = False
-
 from commit_message_generator.config import GeneratorConfig
 from commit_message_generator.models import CommitMessageResponse
+from commit_message_generator.agent_prompts import SYSTEM_PROMPT, ERROR_CORRECT_FORMAT
+from commit_message_generator.configure_langfuse import configure_langfuse
 
 # Configure logging
 logger = logging.getLogger(__name__)
-
-# Default system prompt template
-DEFAULT_SYSTEM_PROMPT = """# Git Commit Message Generator
-
-## Role
-You are an expert software developer and Git user. Your task is to analyze code changes and generate clear, concise, and meaningful commit messages.
-
-## Commit Message Guidelines
-1. **Format**: `<type>/<severity>: <ticket> - <description>`
-2. **Structure**:
-   - Title line (max 50 chars)
-   - Blank line
-   - Detailed description (wrap at {max_line_length} chars)
-   - Reference to related issues (if any)
-3. **Language**: English only
-
-## Change Analysis
-Carefully analyze the provided diff to understand:
-- What was changed
-- Why it was changed
-- Impact of the changes
-- Any potential risks or considerations
-
-## Output
-Generate a commit message that follows the specified format and guidelines."""
-
 
 class CommitMessageGenerator:
     """AI-powered commit message generator.
@@ -56,69 +26,49 @@ class CommitMessageGenerator:
     def __init__(
         self,
         config: Optional[GeneratorConfig] = None,
-        system_prompt: Optional[str] = None,
     ) -> None:
         """Initialize the commit message generator.
 
         Args:
             config: Configuration for the generator. If None, default config is used.
-            system_prompt: Custom system prompt. If None, default is used.
 
         """
         self.config = config or GeneratorConfig()
-        self.system_prompt = self._build_system_prompt(system_prompt)
+        self.system_prompt = self._build_system_prompt()
         self.ai = self._init_ai()
+        self.tracer = configure_langfuse(
+            langfuse_public_key=self.config.langfuse.public_key,
+            langfuse_secret_key=self.config.langfuse.secret_key,
+            langfuse_host=self.config.langfuse.host,
+        )
+
+    async def call_ai(self, user_prompt: str, errors: List[str]):
+        with self.tracer.start_as_current_span("Git-Commit-Message-Generation") as main_span:
+            repo_name = Path.cwd().name
+            main_span.set_attribute("langfuse.user.id", f"gcmg-model-{repo_name}")
+            main_span.set_attribute("langfuse.session.id", f"gcmg-session-{self.config.ai.model_name}")
+
+            # Compile prompt with any errors
+            compiled_prompt = user_prompt + ("\n\nErrors:\n" + "\n".join(errors) if errors else "")
+
+            logger.info(f"Compiled prompt length: {len(compiled_prompt)}")
+
+            # Make the AI call with the message history
+            response = await self.ai.run(
+                user_prompt=compiled_prompt,
+                output_model=CommitMessageResponse,
+                model=self.config.ai.model_name,
+                temperature=self.config.ai.temperature,
+                max_tokens=self.config.ai.max_tokens,
+            )
+
+            main_span.set_attribute("input.value", compiled_prompt)
+            main_span.set_attribute("output.value", response.output)
+
+        return response.output
 
     def _init_ai(self) -> Agent:
-        """Initialize the AI client with configuration and Langfuse integration if enabled."""
-        # Initialize Langfuse if enabled and available
-        logger.debug(f"Checking Langfuse configuration: hasattr(self.config, 'langfuse')={hasattr(self.config, 'langfuse')}")
-        if hasattr(self.config, 'langfuse'):
-            logger.debug(f"Langfuse config: {self.config.langfuse}")
-            logger.debug(f"Langfuse enabled: {getattr(self.config.langfuse, 'enabled', False)}")
-
-        if hasattr(self.config, 'langfuse') and self.config.langfuse and getattr(self.config.langfuse, 'enabled', False) and LANG_FUSE_AVAILABLE:
-            try:
-                # Get credentials from config or environment variables
-                public_key = (
-                    self.config.langfuse.public_key or
-                    os.getenv("LANGFUSE_PUBLIC_KEY")
-                )
-                secret_key = (
-                    self.config.langfuse.secret_key or
-                    os.getenv("LANGFUSE_SECRET_KEY")
-                )
-                host = (
-                    self.config.langfuse.host or
-                    os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
-                )
-
-                if not public_key or not secret_key:
-                    logger.warning(
-                        "Langfuse is enabled but missing required credentials. "
-                        "Please set public_key and secret_key in the config or environment variables."
-                    )
-                else:
-                    # Initialize Langfuse client
-                    self.langfuse = Langfuse(
-                        public_key=public_key,
-                        secret_key=secret_key,
-                        host=host,
-                    )
-
-                    # Test the connection
-                    try:
-                        self.langfuse.auth_check()
-                        logger.info("Langfuse tracing initialized successfully")
-                    except Exception as auth_error:
-                        logger.warning(f"Langfuse auth check failed: {str(auth_error)}")
-                        if hasattr(self, 'langfuse'):
-                            delattr(self, 'langfuse')
-
-            except Exception as e:
-                logger.warning(f"Failed to initialize Langfuse: {str(e)}")
-                if hasattr(self, 'langfuse'):
-                    delattr(self, 'langfuse')
+        """Initialize the AI client with configuration."""
 
         try:
             ai_config = self.config.ai
@@ -135,13 +85,14 @@ class CommitMessageGenerator:
 
             logger.debug(f"Using model: {ai_config.model_name}")
 
-            # Initialize the AI agent with explicit API key
+            # Initialize the AI agent with explicit API key and system prompt
             agent = Agent(
                 model=ai_config.model_name,
                 temperature=ai_config.temperature,
                 max_tokens=ai_config.max_tokens,
                 top_p=ai_config.top_p,
                 api_key=api_key,  # Explicitly pass the API key
+                system_prompt=self.system_prompt,  # Include the system prompt
             )
 
             logger.debug("AI agent initialized successfully")
@@ -151,43 +102,17 @@ class CommitMessageGenerator:
             logger.error(f"Failed to initialize AI agent: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to initialize AI agent: {str(e)}") from e
 
-    def _build_system_prompt(self, custom_prompt: Optional[str] = None) -> str:
-        """Build the system prompt with configuration values.
+    def _build_system_prompt(self) -> str:
+        """Build the system prompt with configuration values."""
 
-        Args:
-            custom_prompt: Optional custom prompt to use instead of default.
-
-        Returns:
-            Formatted system prompt string.
-
-        """
         try:
-            if custom_prompt:
-                logger.debug("Using custom system prompt")
-                return custom_prompt
+            if not SYSTEM_PROMPT or not SYSTEM_PROMPT.strip():
+                logger.error("System prompt is empty")
+                raise ValueError("System prompt is empty")
 
-            max_len = self.config.commit.max_line_length
-            logger.debug(f"Building system prompt with max_line_length={max_len}")
+            logger.debug(f"System prompt: {SYSTEM_PROMPT}")
 
-            # Make sure DEFAULT_SYSTEM_PROMPT is defined and has the correct format
-            if not globals().get("DEFAULT_SYSTEM_PROMPT"):
-                logger.error("DEFAULT_SYSTEM_PROMPT is not defined")
-                raise ValueError("DEFAULT_SYSTEM_PROMPT is not defined")
-
-            prompt = DEFAULT_SYSTEM_PROMPT.format(max_line_length=max_len)
-
-            if not prompt or not prompt.strip():
-                logger.error("Generated system prompt is empty")
-                raise ValueError("Generated system prompt is empty")
-
-            logger.debug(f"System prompt length: {len(prompt)} characters")
-            logger.debug(
-                f"System prompt preview: {prompt[:200]}..."
-                if len(prompt) > 200
-                else f"System prompt: {prompt}"
-            )
-
-            return prompt
+            return SYSTEM_PROMPT
         except Exception as e:
             logger.error(f"Error building system prompt: {str(e)}", exc_info=True)
             raise
@@ -196,7 +121,6 @@ class CommitMessageGenerator:
         self,
         diff: str,
         ticket: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Generate a commit message for the given diff.
 
@@ -216,180 +140,136 @@ class CommitMessageGenerator:
         if not diff or not diff.strip():
             raise ValueError("Diff cannot be empty")
 
-        context = context or {}
-        user_prompt = self._build_user_prompt(diff, ticket, context)
+        user_prompt = self._build_user_prompt(diff, ticket)
 
         try:
             # Debug logging
-            logger.debug(f"System prompt: {self.system_prompt}")
             logger.debug(f"User prompt: {user_prompt}")
 
-            if not self.system_prompt or not user_prompt:
-                error_msg = f"Empty prompt detected. System prompt: {bool(self.system_prompt)}, User prompt: {bool(user_prompt)}"
+            if not user_prompt:
+                error_msg = "Empty user prompt detected"
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
-            # Prepare the messages for the AI
-            messages = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
-
-            # Debug log the messages being sent to the AI
-            logger.debug("Sending the following messages to AI:")
-            for i, msg in enumerate(messages):
-                logger.debug(f"Message {i+1} (role: {msg['role']}):")
-                logger.debug(f"{msg['content']}")
-                logger.debug("-" * 50)
-
-            # Prepare the initial messages with system prompt
-            messages = [{"role": "system", "content": self.system_prompt}]
-
-            # Split the user prompt into chunks if it's too large
-            max_chunk_size = 20000  # Keep chunks under 20k characters
-            if len(user_prompt) > max_chunk_size:
-                logger.warning(
-                    f"User prompt is large ({len(user_prompt)} chars), splitting into chunks..."
-                )
-                chunks = [
-                    user_prompt[i : i + max_chunk_size]
-                    for i in range(0, len(user_prompt), max_chunk_size)
-                ]
-
-                # Add each chunk as a separate user message
-                for i, chunk in enumerate(chunks, 1):
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": f"[Part {i}/{len(chunks)}] Here's a chunk of the git diff. Please wait for all parts before analyzing.\n\n{chunk}",
-                        }
-                    )
-
-                # Add a final message to process all chunks
-                messages.append(
-                    {
-                        "role": "user",
-                        "content": "I've sent all parts of the git diff. Please analyze the complete diff and generate a commit message.",
-                    }
-                )
-            else:
-                # If the prompt is small enough, just add it as a single message
-                messages.append({"role": "user", "content": user_prompt})
-
-            # Debug log the messages being sent to the AI
-            logger.debug(f"Prepared {len(messages)} messages for AI")
-            for i, msg in enumerate(messages):
-                logger.debug(
-                    f"Message {i+1} (role: {msg['role']}): {len(msg['content'])} chars"
-                )
-                if i > 0:  # Skip full content for system message
-                    logger.debug(f"Preview: {msg['content'][:200]}...")
-
-            # Log the prompt details
-            logger.debug(f"System prompt length: {len(self.system_prompt)}")
-            logger.debug(f"User prompt length: {len(user_prompt)}")
-
-            # Call the AI to generate the commit message with Langfuse tracing if enabled
+            # Call the AI to generate the commit message with retry logic for format validation
             logger.debug("Calling AI...")
-            try:
-                if self.config.langfuse.enabled and LANG_FUSE_AVAILABLE and hasattr(self, 'langfuse'):
-                    # Create a new trace for this generation
-                    trace = self.langfuse.trace(
-                        name="generate_commit_message",
-                        input={
-                            "system_prompt": self.system_prompt[:1000] + "..." if len(self.system_prompt) > 1000 else self.system_prompt,
-                            "user_prompt": user_prompt[:1000] + "..." if len(user_prompt) > 1000 else user_prompt,
-                            "model_name": self.config.ai.model_name,
-                            "temperature": self.config.ai.temperature,
-                            "max_tokens": self.config.ai.max_tokens,
-                        }
-                    )
+            response = None
+            max_attempts = 3
+            attempt = 0
+            while attempt < max_attempts:
+                errors = []
+                try:
+                    response = await self.call_ai(user_prompt, errors)
 
-                    # Create a span for the LLM call
-                    generation = trace.generation(
-                        name="llm_call",
-                        model=self.config.ai.model_name,
-                        model_parameters={
-                            "temperature": self.config.ai.temperature,
-                            "max_tokens": self.config.ai.max_tokens,
-                        }
-                    )
-
-                    try:
-                        response = await self.ai.run(
-                            system_prompt=self.system_prompt,
-                            user_prompt=user_prompt,
-                            output_model=CommitMessageResponse,
-                            model_name=self.config.ai.model_name,
-                            temperature=self.config.ai.temperature,
-                            max_tokens=self.config.ai.max_tokens,
+                    # Single point of response validation
+                    if not response:
+                        error_msg = "No valid response output received from AI"
+                        logger.warning(
+                            f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
+                        errors.append(error_msg)
+                        attempt += 1
+                        continue
 
-                        if hasattr(response, 'output') and response.output:
-                            output_str = str(response.output)
-                            generation.end(
-                                output=output_str[:1000] + "..." if len(output_str) > 1000 else output_str
-                            )
-                        return response
+                    # Validate response format
+                    first_line = response.split("\n")[0]
+                    prefix = first_line.split(":")[0]
+                    commit_type = prefix.split("/")[0]
+                    severity = prefix.split("/")[1]
+                    ticket_number = first_line.split(":")[1].split(" - ")[0]
 
-                    except Exception as e:
-                        generation.end(error=str(e))
-                        raise
-                else:
-                    # Fallback to standard call if Langfuse is not enabled or available
-                    response = await self.ai.run(
-                        system_prompt=self.system_prompt,
-                        user_prompt=user_prompt,
-                        output_model=CommitMessageResponse,
-                        model_name=self.config.ai.model_name,
-                        temperature=self.config.ai.temperature,
-                        max_tokens=self.config.ai.max_tokens,
+                    logger.info(f"First line: {first_line}")
+                    logger.info(f"Prefix: {prefix}")
+                    logger.info(f"Commit type: {commit_type}")
+                    logger.info(f"Severity: {severity}")
+                    logger.info(f"Ticket number: {ticket_number}")
+
+                    # Check if response starts with code block (Prohibited in system instructions)
+                    if first_line.startswith("```"):
+                        error_msg = "[ERROR] Response starts with code block while it should not!"
+                        logger.warning(
+                            f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
+                        )
+                        errors.append(error_msg + "\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+
+                    # Check if prefix exists
+                    if not prefix:
+                        error_msg = (
+                            "[ERROR] Commit title (first line) prefix does not exist!"
+                        )
+                        logger.warning(
+                            f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
+                        )
+                        errors.append(error_msg + "\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+
+                    # Check if prefix is correctly formatted
+                    if not commit_type or not severity:
+                        error_msg = "[ERROR] Commit title (first line) prefix is not correctly formatted!"
+                        logger.warning(
+                            f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
+                        )
+                        errors.append(error_msg + "\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+
+                    # Check if ticket number matches
+                    if ticket.strip() != ticket_number.strip():
+                        error_msg = "[ERROR] Ticket number does not match the one from the User Prompt!"
+                        logger.warning(
+                            f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
+                        )
+                        errors.append(error_msg + "\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+
+                    # If we have errors, try again
+                    if errors:
+                        logger.warning(
+                            f"Commit message format validation failed (attempt {attempt + 1}/{max_attempts})"
+                        )
+                        attempt += 1
+                        continue
+
+                    # If we got here, the format is valid
+                    break
+
+                except Exception as e:
+                    error_msg = f"AI call failed: {str(e)}"
+                    logger.error(
+                        f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                     )
 
-                logger.debug("Successfully received response from AI")
-            except Exception as e:
-                logger.error(f"Error calling AI: {str(e)}")
-                logger.error(
-                    f"System prompt length: {len(self.system_prompt) if self.system_prompt else 0}"
-                )
-                logger.error(
-                    f"User prompt length: {len(user_prompt) if user_prompt else 0}"
-                )
-                raise
+                    errors.append("\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
 
-            if not response or not hasattr(response, "output") or not response.output:
-                logger.error(
-                    f"No valid response output received from AI. Response: {response}"
-                )
-                raise ValueError("No valid response output generated by AI")
+                    attempt += 1
+                    if attempt >= max_attempts:
+                        raise
 
-            # The output is already the commit message string
-            if isinstance(response.output, str):
-                return response.output.strip()
-            else:
-                logger.error(f"Unexpected output type: {type(response.output)}")
-                raise ValueError("Expected string output from AI")
+            # Final validation after all attempts
+            if not response:
+                error_msg = (
+                    f"Failed to get valid response after {max_attempts} attempts"
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            return response.strip()
 
         except Exception as e:
             logger.error(f"Error generating commit message: {str(e)}")
             raise RuntimeError(f"Failed to generate commit message: {str(e)}") from e
 
     def _build_user_prompt(
-        self, diff: str, ticket: Optional[str], context: Dict[str, Any]
+        self, diff: str, ticket: Optional[str]
     ) -> str:
         """Build the user prompt for the AI.
 
         Args:
             diff: The git diff.
             ticket: Optional ticket number.
-            context: Additional context.
 
         Returns:
             Formatted user prompt string.
 
         """
         try:
-            logger.debug(
+            logger.info(
                 f"Building user prompt with diff length: {len(diff)}, ticket: {ticket}"
             )
 
@@ -398,36 +278,29 @@ class CommitMessageGenerator:
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
+            prompt_parts = []
+
+            if not ticket:
+                error_msg = "Ticket number is missing"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+
             prompt_parts = [
                 "Please analyze the following git diff and generate a commit message:",
                 "",
-                "```diff",
-                diff.strip(),
-                "```",
+                f"ticket_number: {ticket}",
                 "",
+                "<code_changes>",
+                diff.strip(),
+                "</code_changes>",
+                "",
+                "You must generate a commit message ONLY following the specified format and guidelines from your system prompt!"
             ]
-
-            if ticket:
-                logger.debug(f"Including ticket in prompt: {ticket}")
-                prompt_parts.extend([f"Ticket: {ticket}", ""])
-
-            if context:
-                logger.debug(f"Including context in prompt: {context}")
-                if context:  # Only add the header if there's actual context
-                    prompt_parts.append("Additional context:")
-                    for key, value in context.items():
-                        if value is not None:
-                            prompt_parts.append(f"- {key}: {value}")
-                    prompt_parts.append("")  # Add a blank line after context
-
-            prompt_parts.append(
-                "You must generate a commit message ONLY following the specified format and guidelines."
-            )
 
             prompt = "\n".join(prompt_parts)
 
             # Debug log the final prompt
-            logger.debug(f"Built user prompt with length: {len(prompt)}")
+            logger.info(f"Built user prompt with length: {len(prompt)}")
             logger.debug(
                 f"User prompt preview: {prompt[:300]}..."
                 if len(prompt) > 300
@@ -445,82 +318,3 @@ class CommitMessageGenerator:
         except Exception as e:
             logger.error(f"Error building user prompt: {str(e)}", exc_info=True)
             raise
-
-    @classmethod
-    def from_config_file(cls, config_path: str) -> "CommitMessageGenerator":
-        """Create a generator from a configuration file.
-
-        Args:
-            config_path: Path to the configuration file (JSON or YAML).
-
-        Returns:
-            Configured CommitMessageGenerator instance.
-        """
-        from commit_message_generator.config import load_config_from_file
-
-        try:
-            config = load_config_from_file(config_path)
-
-            # Log Langfuse configuration status
-            if config and hasattr(config, 'langfuse'):
-                if config.langfuse.enabled:
-                    if LANG_FUSE_AVAILABLE:
-                        logger.info("Langfuse tracing is enabled")
-                    else:
-                        logger.warning(
-                            "Langfuse is enabled in config but langfuse package is not installed. "
-                            "Install with: pip install langfuse"
-                        )
-                else:
-                    logger.debug("Langfuse tracing is disabled in config")
-
-            return cls(config=config)
-
-        except Exception as e:
-            logger.warning(
-                f"Failed to load config from {config_path}, using defaults: {str(e)}"
-            )
-            return cls()
-
-
-def generate_commit_message(
-    diff: str,
-    ticket: Optional[str] = None,
-    system_prompt: Optional[str] = None,
-    config_path: Optional[str] = None,
-) -> str:
-    """Generate a commit message from a git diff.
-
-    This is a synchronous wrapper around the async CommitMessageGenerator.
-
-    Args:
-        diff: The git diff output
-        ticket: Optional ticket number (e.g., "AB-1234")
-        system_prompt: Optional custom system prompt
-        config_path: Optional path to a configuration file (JSON or YAML)
-
-    Returns:
-        Generated commit message as a string
-
-    """
-    import asyncio
-
-    # Create the generator with the config file if provided
-    if config_path:
-        generator = CommitMessageGenerator.from_config_file(config_path)
-        # Apply any overrides
-        if system_prompt:
-            generator.system_prompt = system_prompt
-    else:
-        generator = CommitMessageGenerator(system_prompt=system_prompt)
-
-    # Run the async generate method in an event loop
-    loop = asyncio.get_event_loop()
-    try:
-        return loop.run_until_complete(
-            generator.generate_commit_message(diff=diff, ticket=ticket)
-        )
-    finally:
-        # Ensure Langfuse flushes any pending events
-        if hasattr(generator, 'langfuse') and generator.langfuse:
-            loop.run_until_complete(generator.langfuse.flush())

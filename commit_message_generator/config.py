@@ -53,7 +53,9 @@ class AIModelConfig(BaseModel):
 class LoggingConfig(BaseModel):
     """Configuration for logging."""
 
-    level: str = Field("INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    level: str = Field(
+        "INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+    )
     format: str = Field(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         description="Log message format",
@@ -69,7 +71,9 @@ class LoggingConfig(BaseModel):
         """Validate that the logging level is valid."""
         v_upper = v.upper()
         if v_upper not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-            raise ValueError(f"Invalid log level: {v}. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL")
+            raise ValueError(
+                f"Invalid log level: {v}. Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL"
+            )
         return v_upper
 
 
@@ -92,20 +96,11 @@ class CommitMessageConfig(BaseModel):
 
 class LangfuseConfig(BaseModel):
     """Configuration for Langfuse tracing."""
-    
-    enabled: bool = Field(
-        False, description="Whether to enable Langfuse tracing"
-    )
-    public_key: str = Field(
-        "", description="Langfuse public key"
-    )
-    secret_key: str = Field(
-        "", description="Langfuse secret key"
-    )
-    host: str = Field(
-        "https://cloud.langfuse.com", 
-        description="Langfuse host URL"
-    )
+
+    enabled: bool = Field(False, description="Whether to enable Langfuse tracing")
+    public_key: str = Field("", description="Langfuse public key")
+    secret_key: str = Field("", description="Langfuse secret key")
+    host: str = Field("https://cloud.langfuse.com", description="Langfuse host URL")
 
 
 class GeneratorConfig(BaseModel):
@@ -148,7 +143,7 @@ class GeneratorConfig(BaseModel):
                 "logging": {
                     "level": "INFO",
                     "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                    "file": "commit_gen.log"
+                    "file": "commit_gen.log",
                 },
                 "custom_prompts": {
                     "FEATURE": "You are adding a new feature...",
@@ -163,6 +158,7 @@ def setup_logging(logging_config: LoggingConfig) -> None:
 
     Args:
         logging_config: Logging configuration
+
     """
     # Configure root logger
     logger = logging.getLogger()
@@ -208,25 +204,28 @@ def load_config_from_file(file_path: str) -> Optional[GeneratorConfig]:
 
     Raises:
         ValueError: If the file has an unsupported extension or is invalid.
+
     """
     logger = logging.getLogger(__name__)
     path = Path(file_path)
     logger.debug(f"Loading config from: {path.absolute()}")
-    
+
     if not path.exists():
         logger.warning(f"Config file not found: {path.absolute()}")
         return None
 
     # Load the config file
     try:
-        if path.suffix.lower() in ('.yaml', '.yml'):
+        if path.suffix.lower() in (".yaml", ".yml"):
             import yaml
-            with open(path, 'r', encoding='utf-8') as f:
+
+            with open(path, "r", encoding="utf-8") as f:
                 config_data = yaml.safe_load(f)
                 logger.debug(f"Loaded YAML config: {config_data}")
-        elif path.suffix.lower() == '.json':
+        elif path.suffix.lower() == ".json":
             import json
-            with open(path, 'r', encoding='utf-8') as f:
+
+            with open(path, "r", encoding="utf-8") as f:
                 config_data = json.load(f)
                 logger.debug(f"Loaded JSON config: {config_data}")
         else:
@@ -235,11 +234,11 @@ def load_config_from_file(file_path: str) -> Optional[GeneratorConfig]:
         if not config_data:
             logger.warning(f"Empty config file: {path.absolute()}")
             return None
-            
+
         logger.debug(f"Raw config data: {config_data}")
-        
+
         # Ensure all sections exist in the config data
-        if 'langfuse' in config_data:
+        if "langfuse" in config_data:
             logger.debug(f"Langfuse config found: {config_data['langfuse']}")
         else:
             logger.debug("No Langfuse config found in file")

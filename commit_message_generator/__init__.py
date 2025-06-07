@@ -6,7 +6,7 @@ commit messages based on git diffs.
 """
 
 from .cli import cli, generate
-from .commit_generator import CommitMessageGenerator, generate_commit_message
+from .commit_generator import CommitMessageGenerator
 from .config import (
     AIModelConfig,
     CommitMessageConfig,
@@ -39,7 +39,6 @@ __all__ = [
     "CommitType",
     "SeverityLevel",
     # Functions
-    "generate_commit_message",
     "generate",
     "cli",
     "get_git_status",

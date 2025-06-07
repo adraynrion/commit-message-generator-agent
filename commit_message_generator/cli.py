@@ -14,7 +14,7 @@ from commit_message_generator.config import LoggingConfig, setup_logging
 logging.basicConfig(
     level=logging.WARNING,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stderr
+    stream=sys.stderr,
 )
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,6 @@ def cli() -> None:
     pass
 
 
-
 @cli.command()
 @click.option(
     "--ticket",
@@ -77,18 +76,23 @@ def generate(
     """
     asyncio.run(async_generate(ticket, repo, verbose))
 
+
 def find_config_file() -> Optional[str]:
     """Find the configuration file in standard locations.
 
     Returns:
         Path to the config file if found, None otherwise.
+
     """
     from pathlib import Path
 
     # Standard config file locations in order of precedence
     config_paths = [
         Path.cwd() / "config.yaml",  # ./config.yaml
-        Path.home() / ".config" / "commit-msg-gen" / "config.yaml",  # ~/.config/commit-msg-gen/config.yaml
+        Path.home()
+        / ".config"
+        / "commit-msg-gen"
+        / "config.yaml",  # ~/.config/commit-msg-gen/config.yaml
         Path("/etc/commit-msg-gen/config.yaml"),  # /etc/commit-msg-gen/config.yaml
     ]
 
@@ -97,11 +101,13 @@ def find_config_file() -> Optional[str]:
             return str(path)
     return None
 
+
 def setup_verbose_logging(verbose: bool) -> None:
     """Set up verbose logging if requested.
 
     Args:
         verbose: Whether to enable verbose logging
+
     """
     if verbose:
         # Set root logger to DEBUG level
@@ -113,6 +119,7 @@ def setup_verbose_logging(verbose: bool) -> None:
             handler.setLevel(logging.DEBUG)
 
     logger.debug("Verbose logging enabled")
+
 
 async def async_generate(
     ticket: Optional[str] = None,
@@ -127,6 +134,7 @@ async def async_generate(
         ticket: Optional ticket number to include in the commit message
         repo: Optional path to the git repository
         verbose: Whether to show verbose output
+
     """
     if verbose:
         click.echo("Initializing commit message generator...")
@@ -144,10 +152,13 @@ async def async_generate(
             click.echo(f"Using configuration from: {config_path}")
 
         from commit_message_generator.config import load_config_from_file
+
         try:
             config = load_config_from_file(config_path)
             if config is None:
-                logger.warning(f"Failed to load configuration from {config_path}. Using default settings.")
+                logger.warning(
+                    f"Failed to load configuration from {config_path}. Using default settings."
+                )
                 config = None
         except Exception as e:
             logger.error(f"Error loading configuration: {e}")
@@ -156,11 +167,12 @@ async def async_generate(
     # If config loading failed, use default config
     if config is None:
         from commit_message_generator.config import GeneratorConfig
+
         config = GeneratorConfig()
         logger.debug("Using default configuration")
 
     # Set up logging from config
-    if hasattr(config, 'logging') and config.logging:
+    if hasattr(config, "logging") and config.logging:
         setup_logging(config.logging)
 
     try:
@@ -212,7 +224,7 @@ async def async_generate(
                 )
             raise
 
-        print_commit_message(result.output)
+        print_commit_message(result)
 
     except Exception as e:
         click.echo(f"An error occurred: {str(e)}", err=True)
