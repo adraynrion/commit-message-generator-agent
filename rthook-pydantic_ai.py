@@ -20,7 +20,7 @@ def patched_distribution(package_name):
         if package_name == "pydantic_ai_slim":
             # Return a dummy distribution
             class DummyDistribution:
-                def __init__(self):
+                def __init__(self) -> None:
                     self.metadata = {"Name": "pydantic-ai-slim", "Version": "0.1.0"}
 
                 @property

@@ -7,13 +7,14 @@ from typing import List, Optional
 
 from pydantic_ai import Agent
 
+from commit_message_generator.agent_prompts import ERROR_CORRECT_FORMAT, SYSTEM_PROMPT
 from commit_message_generator.config import GeneratorConfig
-from commit_message_generator.models import CommitMessageResponse
-from commit_message_generator.agent_prompts import SYSTEM_PROMPT, ERROR_CORRECT_FORMAT
 from commit_message_generator.configure_langfuse import configure_langfuse
+from commit_message_generator.models import CommitMessageResponse
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
 
 class CommitMessageGenerator:
     """AI-powered commit message generator.
@@ -43,13 +44,19 @@ class CommitMessageGenerator:
         )
 
     async def call_ai(self, user_prompt: str, errors: List[str]):
-        with self.tracer.start_as_current_span("Git-Commit-Message-Generation") as main_span:
+        with self.tracer.start_as_current_span(
+            "Git-Commit-Message-Generation"
+        ) as main_span:
             repo_name = Path.cwd().name
             main_span.set_attribute("langfuse.user.id", f"gcmg-model-{repo_name}")
-            main_span.set_attribute("langfuse.session.id", f"gcmg-session-{self.config.ai.model_name}")
+            main_span.set_attribute(
+                "langfuse.session.id", f"gcmg-session-{self.config.ai.model_name}"
+            )
 
             # Compile prompt with any errors
-            compiled_prompt = user_prompt + ("\n\nErrors:\n" + "\n".join(errors) if errors else "")
+            compiled_prompt = user_prompt + (
+                "\n\nErrors:\n" + "\n".join(errors) if errors else ""
+            )
 
             logger.info(f"Compiled prompt length: {len(compiled_prompt)}")
 
@@ -172,7 +179,10 @@ class CommitMessageGenerator:
                         continue
 
                     # Validate response format
-                    first_line = response.split("\n")[0]
+                    lines = response.split("\n")
+                    first_line = lines[0]
+                    empty_line = lines[1] if len(lines) > 1 else ""
+                    description = lines[2:] if len(lines) > 2 else []
                     prefix = first_line.split(":")[0]
                     commit_type = prefix.split("/")[0]
                     severity = prefix.split("/")[1]
@@ -190,7 +200,9 @@ class CommitMessageGenerator:
                         logger.warning(
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
-                        errors.append(error_msg + "\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+                        errors.append(
+                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                        )
 
                     # Check if prefix exists
                     if not prefix:
@@ -200,7 +212,9 @@ class CommitMessageGenerator:
                         logger.warning(
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
-                        errors.append(error_msg + "\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+                        errors.append(
+                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                        )
 
                     # Check if prefix is correctly formatted
                     if not commit_type or not severity:
@@ -208,7 +222,9 @@ class CommitMessageGenerator:
                         logger.warning(
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
-                        errors.append(error_msg + "\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+                        errors.append(
+                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                        )
 
                     # Check if ticket number matches
                     if ticket.strip() != ticket_number.strip():
@@ -216,9 +232,44 @@ class CommitMessageGenerator:
                         logger.warning(
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
-                        errors.append(error_msg + "\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+                        errors.append(
+                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                        )
 
-                    # If we have errors, try again
+                    # Check if empty_line is correctly set
+                    if empty_line.strip() != "":
+                        error_msg = "[ERROR] Empty line does not exist!"
+                        logger.warning(
+                            f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
+                        )
+                        errors.append(
+                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                        )
+
+                    # Check if description is correctly set
+                    if len(description) == 0:
+                        error_msg = "[ERROR] Description does not exist!"
+                        logger.warning(
+                            f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
+                        )
+                        errors.append(
+                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                        )
+
+                    # Check every line of description if it overflow max_line_length
+                    for i, line in enumerate(description):
+                        if len(line) > self.config.commit.max_line_length:
+                            error_msg = f"[ERROR] Description line {i} overflow max_line_length!"
+                            logger.warning(
+                                f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
+                            )
+                            errors.append(
+                                error_msg
+                                + "\nFormat **must** be:\n"
+                                + ERROR_CORRECT_FORMAT
+                            )
+
+                    # --------- If we have errors, try again ---------
                     if errors:
                         logger.warning(
                             f"Commit message format validation failed (attempt {attempt + 1}/{max_attempts})"
@@ -231,11 +282,9 @@ class CommitMessageGenerator:
 
                 except Exception as e:
                     error_msg = f"AI call failed: {str(e)}"
-                    logger.error(
-                        f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
-                    )
+                    logger.error(f"{error_msg} (attempt {attempt + 1}/{max_attempts})")
 
-                    errors.append("\nFormat **must** be: " + ERROR_CORRECT_FORMAT)
+                    errors.append("\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT)
 
                     attempt += 1
                     if attempt >= max_attempts:
@@ -255,9 +304,7 @@ class CommitMessageGenerator:
             logger.error(f"Error generating commit message: {str(e)}")
             raise RuntimeError(f"Failed to generate commit message: {str(e)}") from e
 
-    def _build_user_prompt(
-        self, diff: str, ticket: Optional[str]
-    ) -> str:
+    def _build_user_prompt(self, diff: str, ticket: Optional[str]) -> str:
         """Build the user prompt for the AI.
 
         Args:
@@ -294,7 +341,7 @@ class CommitMessageGenerator:
                 diff.strip(),
                 "</code_changes>",
                 "",
-                "You must generate a commit message ONLY following the specified format and guidelines from your system prompt!"
+                "You must generate a commit message ONLY following the specified format and guidelines from your system prompt!",
             ]
 
             prompt = "\n".join(prompt_parts)

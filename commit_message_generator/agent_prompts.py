@@ -1,4 +1,4 @@
-"""Commit Message Generator Agent prompts"""
+"""Commit Message Generator Agent prompts."""
 
 SYSTEM_PROMPT: str = """
 ## ✅ Git Commit Message Generator
@@ -115,7 +115,16 @@ requests that affected production stability.
 """
 
 ERROR_CORRECT_FORMAT: str = """
-<Commit Type>/<Severity>: <TICKET> - <short summary>
+```
+<commit_type>/<severity>: <ticket> - <short_summary>
 
-<Detailed description wrapped at 70 characters max per line. Code paths/snippets may exceed this limit.>
+<detailed_description>
+```
+
+Where:
+* `commit_type`: A single word from the list of "✅ Allowed Commit Types (with severity requirement)" below.
+* `severity`: An empty string or a single word from the list of "🔥 Severity Levels" below.
+* `ticket`: A string in format `<2-letter>-<X-letters-or-numbers>` (e.g., AB-1234, CD-azerty, EF-1az2er3ty)
+* `short_summary`: A short summary of the commit message wrapped at 50 characters max.
+* `detailed_description`: A detailed description of the commit message wrapped at 70 characters max per line. Code paths/snippets may exceed this limit.
 """
