@@ -1,7 +1,7 @@
-.PHONY: clean-imports sort-imports format format-docs type-check all
+.PHONY: clean-imports sort-imports format format-docs add-type-annotations type-check all
 
 # Run all code quality checks and formatting
-all: clean-imports sort-imports format format-docs type-check
+all: clean-imports sort-imports format format-docs add-type-annotations type-check
 	@echo "✨ All code quality checks and formatting complete!"
 
 # Remove unused imports
@@ -25,7 +25,7 @@ format-docs:
 	@docformatter --in-place --recursive .
 
 # Add type annotations to specific directories and root Python files
-type-check:
+add-type-annotations:
 	@echo "🔍 Adding type annotations..."
 	@# Process root directory Python files (non-recursive)
 	@echo "  • Processing root directory..."
@@ -40,3 +40,9 @@ type-check:
 		fi; \
 	done
 	@echo "✅ Type annotations added successfully"
+
+# Run static type checking with mypy
+type-check:
+	@echo "🔍 Running static type checking with mypy..."
+	@mypy .
+	@echo "✅ Type checking complete"

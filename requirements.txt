@@ -23,6 +23,8 @@ pytest-cov>=4.1.0,<5.0.0
 pytest-asyncio>=0.23.0,<0.24.0
 types-PyYAML>=6.0.0,<7.0.0
 types-requests>=2.31.0,<3.0.0
+types-setuptools>=69.5.0,<70.0.0
+types-pyinstaller>=6.13.0,<7.0.0
 
 # Linting
 flake8-annotations>=3.0.0,<4.0.0

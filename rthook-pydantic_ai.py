@@ -1,9 +1,11 @@
 # This is a runtime hook to handle pydantic_ai_slim package metadata
 import os
 import sys
+from typing import cast
 
 # Add the path to the pydantic_ai_slim package directory
-pkg_dir = os.path.join(sys._MEIPASS, "pydantic_ai_slim")
+# _MEIPASS is added by PyInstaller at runtime
+pkg_dir = os.path.join(sys._MEIPASS, "pydantic_ai_slim")  # type: ignore[attr-defined]
 sys.path.insert(0, pkg_dir)
 
 # Mock the importlib.metadata functions to handle the package metadata
@@ -38,10 +40,11 @@ importlib.metadata.distribution = patched_distribution
 # Also patch the Distribution.from_name method
 class PatchedDistribution(importlib.metadata.Distribution):
     @classmethod
-    def from_name(cls, name):
+    def from_name(cls, name: str) -> "PatchedDistribution":
         if name == "pydantic_ai_slim":
-            return cls.at("/non/existent/path")
-        return _original_from_name(name)
+            return cast("PatchedDistribution", cls.at("/non/existent/path"))
+        return cast("PatchedDistribution", _original_from_name(name))
 
 
-importlib.metadata.Distribution.from_name = PatchedDistribution.from_name
+# Use setattr to avoid mypy error about method assignment
+setattr(importlib.metadata.Distribution, "from_name", PatchedDistribution.from_name)

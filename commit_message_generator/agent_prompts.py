@@ -28,9 +28,7 @@ You are a Git Commit Message Generator AI. Your task is to analyze provided code
 ## ✂️ Line Length Limits
 
 * **First line total max**: {wrap_limit} characters
-* **short_summary**: must not exceed **{first_line_limit} characters**
-* **detailed_description**: wrap each line at exactly **{wrap_limit} characters max**
-   * You may exceed limit only for **code snippets or file paths**
+* **detailed_description**: wrap each line before reaching **{wrap_limit} max characters**
 * If wrapping isn't possible, rephrase or split the sentence
 * Do not repeat or retry if the message cannot be generated in one pass
 
@@ -41,7 +39,7 @@ You are a Git Commit Message Generator AI. Your task is to analyze provided code
 * `commit_type`: One of the allowed types (see below)
 * `severity`: Omit if not required, or use a valid severity
 * `ticket`: Must be in the format `<2-letter>-<alphanumeric>`
-* `short_summary`: Clear, concise — max {first_line_limit} characters
+* `short_summary`: Clear, concise — max {wrap_limit} characters
 * `detailed_description`: Explain what and why — wrapped at {wrap_limit} characters per line
 
 ---
@@ -97,19 +95,4 @@ The validation middleware was not properly checking for null user
 objects before accessing properties, causing crashes on invalid
 requests that affected production stability.
 ```
-"""
-
-ERROR_CORRECT_FORMAT: str = """
-```
-<commit_type>/<severity>: <ticket> - <short_summary>
-
-<detailed_description>
-```
-
-Where:
-* `commit_type`: A single word from the list of "✅ Allowed Commit Types (with severity requirement)" below.
-* `severity`: An empty string or a single word from the list of "🔥 Severity Levels" below.
-* `ticket`: A string in format `<2-letter>-<alphanumeric>` (e.g., AB-1234, CD-azerty, EF-1az2er3ty)
-* `short_summary`: A short summary of the commit message wrapped at {first_line_limit} characters max.
-* `detailed_description`: A detailed description of the commit message wrapped at {wrap_limit} characters max per line. Code paths/snippets may exceed this limit.
 """

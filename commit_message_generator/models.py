@@ -1,8 +1,15 @@
 """Pydantic models for the commit message generator."""
 
+import logging
+import re
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Optional, Union
+
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "ChangeType",
@@ -13,9 +20,6 @@ __all__ = [
     "extract_ticket_from_branch",
     "parse_commit_message",
 ]
-import re
-
-from pydantic import BaseModel, Field, field_validator
 
 
 class ChangeType(str, Enum):
@@ -57,22 +61,31 @@ class CommitMessageResponse(BaseModel):
     message: str = Field(..., description="The generated commit message")
 
     confidence: float = Field(
-        0.0,
+        default=0.0,
         ge=0.0,
         le=1.0,
         description="Confidence score of the generated message (0.0 to 1.0)",
     )
 
-    commit_type: str = Field(
-        ..., description="Type of the commit (e.g., FEATURE, BUGFIX, etc.)"
+    commit_type: Optional[str] = Field(
+        default=None,
+        description="Type of the commit (FEATURE, IMPROVE, BUGFIX, REFACTO, CORE, TEST, DOC)",
     )
 
-    severity: str = Field(
-        ..., description="Severity level of the changes (e.g., MAJOR, MEDIUM, MINOR)"
+    severity: Optional[str] = Field(
+        default=None,
+        description="Severity level of the changes (MAJOR, MEDIUM, MINOR)",
     )
 
     ticket: Optional[str] = Field(
-        None, description="Ticket number associated with the changes"
+        default=None,
+        description="Ticket associated with the changes (format: <2-letters>-<alphanumeric>)",
+    )
+
+    config: Optional[Any] = Field(
+        default=None,
+        description="Configuration object for validation",
+        exclude=True,  # Don't include in serialization
     )
 
     class Config:
@@ -88,20 +101,124 @@ class CommitMessageResponse(BaseModel):
 
     @field_validator("message")
     @classmethod
-    def validate_message(cls, v: str) -> str:
-        """Validate the commit message format."""
+    def validate_message(cls, v: str, info: ValidationInfo) -> str:
+        """Validate the commit message format.
+
+        The commit message must follow this format:
+        <Commit Type>/<Severity>: <2-letters>-<alphanumeric> - <description>
+
+        Where:
+        - Commit Type: One of FEATURE, IMPROVE, BUGFIX, REFACTO, CORE, TEST, DOC
+        - Severity: One of MAJOR, MEDIUM, MINOR (required for FEATURE, IMPROVE, BUGFIX, REFACTO)
+        - Ticket number: Format <2-letters>-<alphanumeric>
+        - Description: Brief description of the change
+
+        The message must also include an empty line after the first line and a detailed description.
+
+        Args:
+            v: The commit message to validate
+            info: ValidationInfo object containing the model instance being validated
+
+        Returns:
+            The validated commit message
+
+        """
+
         if not v or not v.strip():
             raise ValueError("Commit message cannot be empty")
 
-        # Check if the message follows the conventional commit format
-        lines = v.strip().split("\n")
-        first_line = lines[0]
+        lines = [line.rstrip() for line in v.strip().split("\n")]
+        first_line = lines[0] if lines else ""
+        empty_line = lines[1] if len(lines) > 1 else ""
+        description = lines[2:] if len(lines) > 2 else []
 
-        # Basic validation - can be enhanced based on requirements
-        if len(first_line) > 72:  # Standard git commit message line length
+        # Get max line length from config if available, otherwise use defaults
+        config = info.data.get("config") if info.data else None
+        max_line_length = getattr(
+            getattr(config, "commit", None), "max_line_length", 80
+        )
+
+        # Check if message starts with code block
+        if first_line.startswith("```"):
+            raise ValueError("Response starts with code block while it should not")
+
+        # Check prefix format
+        if ":" not in first_line:
             raise ValueError(
-                "First line of commit message should be 72 characters or less"
+                "Commit title (first line) is missing the ':' separator. "
+                "Expected format: '<Commit Type>/<Severity>: <ticket> - <description>'"
             )
+
+        else:
+            prefix, *rest = first_line.split(":", 1)
+            rest_of_line = ":".join(rest).strip() if rest else ""
+
+            # Check prefix components if they exist
+            if prefix.strip():
+                if "/" in prefix:
+                    parts = prefix.split("/")
+                    commit_type = parts[0].strip().upper()
+                    if len(parts) > 1:
+                        severity = "/".join(parts[1:]).strip().upper()
+                else:
+                    commit_type = prefix.strip().upper()
+
+                # Validate commit type if provided
+                if commit_type:
+                    valid_commit_types = [
+                        "FEATURE",
+                        "IMPROVE",
+                        "BUGFIX",
+                        "REFACTO",
+                        "CORE",
+                        "TEST",
+                        "DOC",
+                    ]
+                    if commit_type not in valid_commit_types:
+                        logger.warning(
+                            f"Unexpected commit type: {commit_type}. "
+                            f"Expected one of: {', '.join(valid_commit_types)}"
+                        )
+                    else:
+                        # Only validate severity if we have a valid commit type that requires it
+                        valid_severities = ["MAJOR", "MEDIUM", "MINOR"]
+                        if (
+                            commit_type in ["FEATURE", "IMPROVE", "BUGFIX", "REFACTO"]
+                            and severity
+                            and severity not in valid_severities
+                        ):
+                            logger.warning(
+                                f"Unexpected severity: {severity}. "
+                                f"Expected one of: {', '.join(valid_severities)}"
+                            )
+
+        # Check ticket number format if present
+        if " - " in rest_of_line:
+            ticket_part, *_ = rest_of_line.split(" - ", 1)
+            ticket_number = ticket_part.strip()
+
+            if ticket_number and not (
+                len(ticket_number) >= 4 and ticket_number[2] == "-"
+            ):
+                logger.warning(
+                    f"Ticket number '{ticket_number}' doesn't match expected format '<2-letters>-<alphanumeric>'"
+                )
+
+        # Check empty line after first line
+        if empty_line.strip() != "":
+            raise ValueError(
+                "Second line must be empty. "
+                "Please add a blank line between the title and description."
+            )
+
+        # Check description line lengths
+        for i, line in enumerate(description):
+            if (
+                len(line) > max_line_length
+            ):  # Using a reasonable default if not in config
+                raise ValueError(
+                    f"Description line {i} exceeds maximum length of {max_line_length} characters (current length: {len(line)})"
+                )
 
         return v.strip()
 

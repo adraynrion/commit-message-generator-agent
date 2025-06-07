@@ -32,17 +32,29 @@ class AIModelConfig(BaseModel):
     """Configuration for the AI model."""
 
     model_name: str = Field(
-        ..., description="Name of the AI model to use (e.g., gpt-4o-mini)"
+        default="gpt-4o-mini",
+        description="Name of the AI model to use (e.g., gpt-4o-mini)",
     )
     temperature: float = Field(
-        0.2, ge=0.0, le=2.0, description="Temperature for text generation"
+        default=0.2,
+        ge=0.0,
+        le=2.0,
+        description="Temperature for text generation",
     )
     max_tokens: int = Field(
-        500, ge=100, le=4000, description="Maximum number of tokens to generate"
+        default=500,
+        ge=100,
+        le=4000,
+        description="Maximum number of tokens to generate",
     )
-    top_p: float = Field(1.0, ge=0.0, le=1.0, description="Nucleus sampling parameter")
+    top_p: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Nucleus sampling parameter",
+    )
     max_attempts: int = Field(
-        3,
+        default=3,
         ge=1,
         le=10,
         description="Maximum number of attempts to generate a valid commit message",
@@ -60,14 +72,15 @@ class LoggingConfig(BaseModel):
     """Configuration for logging."""
 
     level: str = Field(
-        "INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+        default="INFO",
+        description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     )
     format: str = Field(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         description="Log message format",
     )
     file: Optional[str] = Field(
-        None,
+        default=None,
         description="Path to log file. If None or empty, logs to console only",
     )
 
@@ -87,35 +100,50 @@ class CommitMessageConfig(BaseModel):
     """Configuration for commit message generation."""
 
     max_line_length: int = Field(
-        80, ge=50, le=100, description="Maximum line length for commit messages"
+        default=80,
+        ge=50,
+        le=100,
+        description="Maximum line length for commit messages",
     )
 
 
 class LangfuseConfig(BaseModel):
     """Configuration for Langfuse tracing."""
 
-    enabled: bool = Field(False, description="Whether to enable Langfuse tracing")
-    public_key: str = Field("", description="Langfuse public key")
-    secret_key: str = Field("", description="Langfuse secret key")
-    host: str = Field("https://cloud.langfuse.com", description="Langfuse host URL")
+    enabled: bool = Field(
+        default=False,
+        description="Whether to enable Langfuse tracing",
+    )
+    public_key: str = Field(
+        default="",
+        description="Langfuse public key",
+    )
+    secret_key: str = Field(
+        default="",
+        description="Langfuse secret key",
+    )
+    host: str = Field(
+        default="https://cloud.langfuse.com",
+        description="Langfuse host URL",
+    )
 
 
 class GeneratorConfig(BaseModel):
     """Top-level configuration for the commit message generator."""
 
     ai: AIModelConfig = Field(
-        default_factory=AIModelConfig, description="AI model configuration"
+        default=AIModelConfig(model_name="gpt-4"), description="AI model configuration"
     )
     commit: CommitMessageConfig = Field(
-        default_factory=CommitMessageConfig,
+        default=CommitMessageConfig(),
         description="Commit message generation settings",
     )
     langfuse: LangfuseConfig = Field(
-        default_factory=LangfuseConfig,
+        default=LangfuseConfig(),
         description="Langfuse tracing configuration",
     )
     logging: LoggingConfig = Field(
-        default_factory=LoggingConfig,
+        default=LoggingConfig(),
         description="Logging configuration",
     )
 

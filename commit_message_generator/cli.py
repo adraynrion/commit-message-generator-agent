@@ -220,14 +220,21 @@ async def async_generate(
             logger.info("Generating commit message...")
             result = await generator.generate_commit_message(diff=diff, ticket=ticket)
             logger.info("Successfully generated commit message")
-        except Exception as e:
-            logger.error(f"Failed to generate commit message: {str(e)}", exc_info=True)
-            click.echo(f"Error: Failed to generate commit message: {str(e)}", err=True)
+        except ValueError as e:
+            # User-friendly error message for validation errors
+            click.echo(f"❌ Error: {str(e)}", err=True)
             if verbose:
-                logger.debug(
-                    f"Diff that caused the error (first 500 chars): {diff[:500]}"
-                )
-            raise
+                logger.debug(f"Validation error: {str(e)}")
+            sys.exit(1)
+        except Exception as e:
+            # Generic error handler for unexpected errors
+            error_msg = "Failed to generate commit message. Please try again later."
+            if verbose:
+                logger.debug(f"Error details: {str(e)}", exc_info=True)
+            else:
+                logger.error(error_msg)
+            click.echo(f"❌ {error_msg}", err=True)
+            sys.exit(1)
 
         print_commit_message(result)
 

@@ -2,7 +2,7 @@ import base64
 import os
 
 import logfire
-import nest_asyncio
+import nest_asyncio  # type: ignore[import-untyped]
 from opentelemetry import trace
 
 
@@ -14,6 +14,7 @@ def scrubbing_callback(match: logfire.ScrubMatch) -> str:
     ):
         # Return the original value to prevent redaction.
         return match.value
+    return ""
 
 
 # Configure Langfuse for agent observability
