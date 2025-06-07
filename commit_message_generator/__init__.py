@@ -14,8 +14,8 @@ from .config import (
     GeneratorConfig,
     SeverityLevel,
 )
-from .git_utils import get_staged_diff, is_git_repo, run_git_command
-from .models import CommitAnalysis, CommitContext, CommitMessageResponse
+from .git_utils import get_staged_diff, get_staged_files_status, is_git_repo, run_git_command
+from .models import CommitAnalysis, CommitMessageResponse
 
 __version__ = "0.2.0"
 __all__ = [
@@ -27,7 +27,6 @@ __all__ = [
     # Models
     "CommitMessageResponse",
     "CommitAnalysis",
-    "CommitContext",
     # Enums
     "CommitType",
     "SeverityLevel",
@@ -35,6 +34,7 @@ __all__ = [
     "generate",
     "cli",
     "get_staged_diff",
+    "get_staged_files_status",
     "is_git_repo",
     "run_git_command",
 ]

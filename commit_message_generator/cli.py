@@ -6,15 +6,34 @@ import sys
 from typing import Optional
 
 import click
+from rich.logging import RichHandler
 
 from commit_message_generator.commit_generator import CommitMessageGenerator
 from commit_message_generator.config import LoggingConfig, setup_logging
+from commit_message_generator.rich_utils import (
+    console,
+    print_commit_message as rich_print_commit_message,
+    print_error,
+    print_header,
+    print_success,
+    print_warning,
+)
 
 # Configure basic logging initially (will be overridden by config)
 logging.basicConfig(
     level=logging.WARNING,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stderr,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[
+        RichHandler(
+            console=console,
+            show_time=False,
+            show_level=False,
+            show_path=False,
+            rich_tracebacks=True,
+            tracebacks_show_locals=True,
+        )
+    ],
 )
 
 # Create logger here but don't set level yet
@@ -142,31 +161,31 @@ async def async_generate(
 
     """
     if verbose:
-        click.echo("Initializing commit message generator...")
+        print_header("Initializing commit message generator...")
         setup_verbose_logging(verbose)
 
     # Load configuration
     config_path = find_config_file()
     if config_path is None:
         # If no config file, use default logging
-        logger.warning("No configuration file found. Using default settings.")
+        print_warning("No configuration file found. Using default settings.")
         setup_logging(LoggingConfig())
         config = None
     else:
         if verbose:
-            click.echo(f"Using configuration from: {config_path}")
+            print_success(f"Using configuration from: {config_path}")
 
         from commit_message_generator.config import load_config_from_file
 
         try:
             config = load_config_from_file(config_path)
             if config is None:
-                logger.warning(
+                print_warning(
                     f"Failed to load configuration from {config_path}. Using default settings."
                 )
                 config = None
         except Exception as e:
-            logger.error(f"Error loading configuration: {e}")
+            print_error(f"Error loading configuration: {e}")
             config = None
 
     # If config loading failed, use default config
@@ -184,30 +203,34 @@ async def async_generate(
         generator = CommitMessageGenerator(config=config)
 
         if verbose:
-            click.echo("Analyzing staged changes...")
+            print_header("Analyzing staged changes...")
 
         # Get the staged diff
         from .git_utils import get_staged_diff, is_git_repo
 
         if not is_git_repo():
-            click.echo(
-                "Error: Not a git repository. Please run this command from within a git repository.",
-                err=True,
+            print_error(
+                "Not a git repository. Please run this command from within a git repository."
             )
             return
 
         diff, return_code = get_staged_diff()
 
         if return_code != 0:
-            click.echo(f"Error getting staged changes: {diff}", err=True)
+            print_error("No staged changes to commit.")
             return
 
         if not diff or not diff.strip():
-            click.echo(
-                "No staged changes found. Please stage your changes with 'git add' first.",
-                err=True,
-            )
+            print_error("No staged changes found. Please stage your changes with 'git add' first.")
             return
+
+        if verbose:
+            # Show a summary of changes
+            from .git_utils import get_staged_files_status
+            from .rich_utils import print_diff_summary
+            added, modified, deleted = get_staged_files_status()
+            if added or modified or deleted:
+                print_diff_summary(added, modified, deleted)
 
         if verbose:
             click.echo(f"Found staged changes (length: {len(diff)}):")
@@ -216,35 +239,31 @@ async def async_generate(
             click.echo("-" * 50)
 
         # Generate the commit message
-        try:
-            logger.info("Generating commit message...")
-            result = await generator.generate_commit_message(diff=diff, ticket=ticket)
-            logger.info("Successfully generated commit message")
-        except ValueError as e:
-            # User-friendly error message for validation errors
-            click.echo(f"❌ Error: {str(e)}", err=True)
-            if verbose:
-                logger.debug(f"Validation error: {str(e)}")
-            sys.exit(1)
-        except Exception as e:
-            # Generic error handler for unexpected errors
-            error_msg = "Failed to generate commit message. Please try again later."
-            if verbose:
-                logger.debug(f"Error details: {str(e)}", exc_info=True)
-            else:
-                logger.error(error_msg)
-            click.echo(f"❌ {error_msg}", err=True)
-            sys.exit(1)
-
-        print_commit_message(result)
-
-    except Exception as e:
-        click.echo(f"An error occurred: {str(e)}", err=True)
         if verbose:
-            import traceback
+            print_header("Generating commit message...")
 
-            click.echo("\nStack trace:")
-            traceback.print_exc()
+        with console.status("[bold green]Analyzing changes and generating commit message..."):
+            commit_message = await generator.generate_commit_message(
+                diff, ticket=ticket
+            )
+        
+        rich_print_commit_message(commit_message)
+
+    except ValueError as e:
+        # User-friendly error message for validation errors
+        print_error(str(e))
+        if verbose:
+            logger.debug(f"Validation error: {str(e)}")
+        sys.exit(1)
+    except Exception as e:
+        # Generic error handler for unexpected errors
+        error_msg = "Failed to generate commit message. Please try again later."
+        if verbose:
+            logger.exception("Error details:")
+        else:
+            print_error(error_msg)
+            print_warning("Use --verbose flag for more details")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

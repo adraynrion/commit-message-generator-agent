@@ -1,4 +1,4 @@
-.PHONY: clean-imports sort-imports format format-docs add-type-annotations type-check all
+.PHONY: clean-imports sort-imports format format-docs add-type-annotations type-check test test-cov all
 
 # Run all code quality checks and formatting
 all: clean-imports sort-imports format format-docs add-type-annotations type-check
@@ -46,3 +46,13 @@ type-check:
 	@echo "🔍 Running static type checking with mypy..."
 	@mypy .
 	@echo "✅ Type checking complete"
+
+# Run tests
+test:
+	@echo "🧪 Running test suite..."
+	@pytest tests/
+
+# Run tests with coverage report
+test-cov:
+	@echo "📊 Running test suite with coverage..."
+	@pytest --cov=commit_message_generator --cov-report=term-missing tests/

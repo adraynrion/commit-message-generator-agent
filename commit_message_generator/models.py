@@ -16,8 +16,6 @@ __all__ = [
     "CommitFile",
     "CommitMessageResponse",
     "CommitAnalysis",
-    "CommitContext",
-    "extract_ticket_from_branch",
     "parse_commit_message",
 ]
 
@@ -223,36 +221,6 @@ class CommitMessageResponse(BaseModel):
         return v.strip()
 
 
-def extract_ticket_from_branch(branch_name: str) -> Optional[str]:
-    """Extract a ticket number from a branch name.
-
-    Supports both JIRA-style (ABC-123) and GitHub-style (#123) ticket numbers.
-
-    Args:
-        branch_name: Name of the git branch
-
-    Returns:
-        Extracted ticket number (with # prefix for GitHub issues) or None if no match found
-
-    """
-    if not branch_name:
-        return None
-
-    import re
-
-    # Try JIRA-style ticket first (ABC-123)
-    jira_match = re.search(r"([A-Z]{2,}-\d+)", branch_name)
-    if jira_match:
-        return jira_match.group(1)
-
-    # Try GitHub-style issue number (123)
-    github_match = re.search(r"(?:^|[/-])(\d+)(?:-|$)", branch_name)
-    if github_match:
-        return f"#{github_match.group(1)}"
-
-    return None
-
-
 def parse_commit_message(message: str) -> Dict[str, Any]:
     """Parse a commit message into its components.
 
@@ -349,57 +317,3 @@ class CommitAnalysis(BaseModel):
         """Update the insertion/deletion statistics."""
         self.total_insertions += insertions
         self.total_deletions += deletions
-
-
-class CommitContext(BaseModel):
-    """Context for commit message generation."""
-
-    branch_name: Optional[str] = Field(
-        None, description="Name of the current git branch"
-    )
-
-    ticket: Optional[str] = Field(
-        None, description="Ticket number extracted from branch name or provided by user"
-    )
-
-    related_issues: list[str] = Field(
-        default_factory=list, description="List of related issue numbers"
-    )
-
-    is_merge: bool = Field(False, description="Whether this is a merge commit")
-
-    is_initial_commit: bool = Field(
-        False, description="Whether this is the initial commit"
-    )
-
-    # Additional fields used in tests
-    author_name: Optional[str] = Field(None, description="Name of the commit author")
-
-    author_email: Optional[str] = Field(None, description="Email of the commit author")
-
-    commit_date: Optional[datetime] = Field(
-        None, description="Date and time of the commit"
-    )
-
-    flags: list[str] = Field(
-        default_factory=list, description="List of flags or tags for the commit"
-    )
-
-    def extract_ticket_from_branch(self, pattern: str = r"([A-Z]{2,}-\d+)") -> bool:
-        """Extract ticket number from branch name using regex pattern.
-
-        Args:
-            pattern: Regex pattern to match ticket numbers
-
-        Returns:
-            bool: True if a ticket was extracted, False otherwise
-
-        """
-        if not self.branch_name:
-            return False
-
-        match = re.search(pattern, self.branch_name)
-        if match:
-            self.ticket = match.group(1)
-            return True
-        return False

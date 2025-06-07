@@ -56,3 +56,45 @@ def get_staged_diff() -> Tuple[str, int]:
         return "Not a git repository", -1
 
     return run_git_command(["diff", "--cached", "-w"], cwd=None)
+
+
+def get_staged_files_status() -> Tuple[int, int, int]:
+    """Get the count of added, modified, and deleted files in the staging area.
+
+    Returns:
+        Tuple of (added_count, modified_count, deleted_count)
+    """
+    if not is_git_repo():
+        return 0, 0, 0
+    
+    # Get the status of staged files
+    status_output, return_code = run_git_command(["status", "--porcelain", "--untracked-files=no"])
+    
+    if return_code != 0:
+        return 0, 0, 0
+    
+    added = 0
+    modified = 0
+    deleted = 0
+    
+    for line in status_output.splitlines():
+        if not line.strip():
+            continue
+            
+        # Status format: XY filename
+        # X = status of index (staging area)
+        # Y = status of working tree
+        status = line[:2]
+        
+        # Check staged changes (index)
+        if status[0] == 'A':
+            added += 1
+        elif status[0] == 'M':
+            modified += 1
+        elif status[0] == 'D':
+            deleted += 1
+        elif status[0] == 'R' or status[0] == 'C':
+            # Renamed or Copied files count as modified
+            modified += 1
+    
+    return added, modified, deleted

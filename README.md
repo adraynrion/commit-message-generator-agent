@@ -1,21 +1,21 @@
 # Git Commit Message Generator Agent
 
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.11.9-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Type Checker: mypy](https://img.shields.io/badge/type%20checker-mypy-blueviolet)](http://mypy-lang.org/)
+[![Code style: flake8](https://img.shields.io/badge/code%20style-flake8-ff69b4)](https://flake8.pycqa.org/)
+[![Testing: pytest](https://img.shields.io/badge/testing-pytest-0d8fcc)](https://docs.pytest.org/)
+[![Coverage](https://github.com/adraynrion/commit-message-generator-agent/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/adraynrion/commit-message-generator-agent/actions/workflows/test.yml)
 
 An AI-powered CLI tool that helps generate clear, concise, and conventional commit messages based on your git changes.
 
 ## ✨ Features
 
 - 🤖 **AI-Powered** - Uses advanced language models to understand code changes
-- 📝 **Conventional Commits** - Follows the [Conventional Commits](https://www.conventionalcommits.org/) specification
-- 🎛️ **Configurable** - Customize behavior through YAML/JSON configuration
 - 🔍 **Smart Analysis** - Analyzes git diffs to understand changes in context
 - 🎨 **Beautiful Output** - Rich terminal formatting with syntax highlighting
-- 🔌 **Extensible** - Easy to add custom commit types and templates
 - 🧪 **Type Hints** - Full type annotations for better development experience
-- 🚀 **Fast & Lightweight** - Minimal dependencies, optimized for performance
 
 ## 📦 Installation
 
@@ -35,8 +35,8 @@ cd commit-message-generator-agent
 
 2. Create and activate a virtual environment:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 3. Install in development mode with all dependencies:
@@ -65,7 +65,7 @@ Or add it to your environment variables.
 git add .
 
 # Generate and review the commit message
-commit-msg-gen generate
+commit-msg-gen generate -t AB-12aze34
 ```
 
 ## 🛠️ Configuration
@@ -83,7 +83,7 @@ Example configuration (see [default_config.yaml](commit_message_generator/defaul
 ai:
   model_name: "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster/cheaper results
   temperature: 0.3  # 0.0 to 2.0, higher is more creative/random
-  max_tokens: 500   # Maximum length of the generated message
+  max_tokens: 1000  # Maximum length of the generated message
   top_p: 1.0        # Nucleus sampling parameter (0.0 to 1.0)
   max_attempts: 3   # Maximum number of attempts to generate a valid commit message
 
@@ -108,17 +108,15 @@ langfuse:
 ## 📝 Usage
 
 ```bash
-# Generate a commit message for staged changes
-commit-msg-gen generate
-
-# Specify a ticket number
-commit-msg-gen generate --ticket AB-1234
+# Generate a commit message for staged changes with a ticket number
+commit-msg-gen generate --ticket AB-12aze34
 
 # Enable verbose output
-commit-msg-gen generate --verbose
+commit-msg-gen generate --ticket AB-12aze34 --verbose
 
 # Show help
 commit-msg-gen --help
+commit-msg-gen generate --help
 ```
 
 ## 🔌 Build
@@ -169,28 +167,28 @@ This will create a standalone executable in the `dist` directory.
 You can also use the generator programmatically:
 
 ```python
-from commit_message_generator import CommitMessageGenerator, CommitContext
+import asyncio
+from commit_message_generator import CommitMessageGenerator
 
-# Initialize the generator
-generator = CommitMessageGenerator()
+async def main():
+    # Initialize the generator
+    generator = CommitMessageGenerator()
 
-# Generate a commit message
-commit_message = await generator.generate_commit_message(
-  diff="""diff --git a/file.txt b/file.txt
-  index 1234567..89abcde 100644
-  --- a/file.txt
-  +++ b/file.txt
-  @@ -1 +1,2 @@
-    Hello, world!
-  +This is a new line.""",
-  ticket="ABC-123",
-  context=CommitContext(
-    branch_name="feature/ABC-123-new-feature",
-    related_issues=["#42"]
-  )
-)
+    # Generate a commit message
+    commit_message = await generator.generate_commit_message(
+        diff="""diff --git a/file.txt b/file.txt
+        index 1234567..89abcde 100644
+        --- a/file.txt
+        +++ b/file.txt
+        @@ -1 +1,2 @@
+          Hello, world!
+        +This is a new line.""",
+        ticket="ABC-123"  # Optional: Include a ticket number
+    )
+    print(commit_message)
 
-print(commit_message)
+# Run the async function
+asyncio.run(main())
 ```
 
 ## 🧪 Testing
@@ -198,43 +196,47 @@ print(commit_message)
 Run the test suite:
 
 ```bash
-pytest tests/
+make test
 ```
 
 Run with coverage:
 
 ```bash
-pytest --cov=commit_message_generator --cov-report=term-missing tests/
+make test-cov
 ```
 
 ## 🛠️ Code Quality
 
-We use several tools to maintain code quality.
+We use several tools to maintain code quality. All commands can be run via the Makefile:
 
 1. **Remove unused imports**:
 ```bash
-pycln . --config pyproject.toml -a
+make clean-imports
 ```
 
 2. **Sort imports**:
 ```bash
-isort .
+make sort-imports
 ```
 
 3. **Format code with Black**:
 ```bash
-black .
+make format
 ```
 
 4. **Format docstrings**:
 ```bash
-docformatter --in-place --recursive .
+make format-docs
 ```
 
 5. **Add type annotations** (review changes carefully):
 ```bash
-autotyping "commit_message_generator" --safe
-autotyping "tests" --safe
+make add-type-annotations
+```
+
+6. **Run all code quality checks and formatting**:
+```bash
+make all
 ```
 
 ## 🤝 Contributing
@@ -253,7 +255,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [Conventional Commits](https://www.conventionalcommits.org/)
 - [OpenAI](https://openai.com/)
 - [Pydantic](https://pydantic-docs.helpmanual.io/)
 - [Click](https://click.palletsprojects.com/)

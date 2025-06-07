@@ -14,7 +14,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="commit-message-generator",
-    version="0.2.0",  # Updated version for the enhanced implementation
+    version="1.0.0",  # Updated version for the enhanced implementation
     author="Adraynrion",
     author_email="your.email@example.com",
     description="An AI-powered tool to generate conventional commit messages from git diffs",
