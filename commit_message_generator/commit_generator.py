@@ -13,7 +13,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 from commit_message_generator.agent_prompts import SYSTEM_PROMPT
 from commit_message_generator.config import GeneratorConfig
 from commit_message_generator.configure_langfuse import configure_langfuse
-from commit_message_generator.models import parse_commit_message, CommitMessageResponse
+from commit_message_generator.models import CommitMessageResponse, parse_commit_message
 
 
 @dataclass
@@ -66,6 +66,7 @@ class CommitMessageGenerator:
 
         Raises:
             ValueError: If there's an error calling the AI or if the response is invalid.
+
         """
         try:
             logger.debug(f"Calling AI with prompt length: {len(prompt)}")
@@ -90,7 +91,9 @@ class CommitMessageGenerator:
                         )
 
                         if hasattr(response, "output"):
-                            main_span.set_attribute("output.value", str(response.output))
+                            main_span.set_attribute(
+                                "output.value", str(response.output)
+                            )
                             logger.debug("AI call completed successfully")
                             return response.output
 
@@ -121,7 +124,9 @@ class CommitMessageGenerator:
                 logger.debug(error_msg, exc_info=True)
             else:
                 logger.error("Failed to generate commit message")
-            raise ValueError("Failed to generate commit message. Please try again later.") from None
+            raise ValueError(
+                "Failed to generate commit message. Please try again later."
+            ) from None
 
     def _init_ai(self) -> Agent:
         """Initialize the AI agent with the specified configuration.
@@ -201,7 +206,7 @@ class CommitMessageGenerator:
         self,
         diff: str,
         ticket: Optional[str] = None,
-    ) -> str:
+    ) -> "CommitMessageResponse":
         """Generate a commit message based on the provided diff and optional ticket.
 
         Args:
@@ -209,7 +214,7 @@ class CommitMessageGenerator:
             ticket: Optional ticket number to include in the commit message
 
         Returns:
-            The generated commit message
+            CommitMessageResponse: The generated commit message response
 
         Raises:
             ValueError: If the commit message cannot be generated
@@ -223,8 +228,16 @@ class CommitMessageGenerator:
             logger.debug("Calling AI to generate commit message")
             response = await self.call_ai(user_prompt)
 
+            # If response is a string, wrap it in CommitMessageResponse
+            from commit_message_generator.models import CommitMessageResponse
+
+            if isinstance(response, str):
+                response = CommitMessageResponse(message=response)
+
             if not response or not hasattr(response, "message"):
-                error_msg = "The AI did not return a valid commit message. Please try again."
+                error_msg = (
+                    "The AI did not return a valid commit message. Please try again."
+                )
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
@@ -240,7 +253,8 @@ class CommitMessageGenerator:
                 raise ValueError(error_msg) from e
 
             logger.info("Successfully generated commit message")
-            return commit_message
+            response.message = commit_message
+            return response
 
         except ValueError as e:
             # Re-raise validation errors as-is
@@ -249,7 +263,9 @@ class CommitMessageGenerator:
             if isinstance(e, UnexpectedModelBehavior):
                 error_msg = "The AI model encountered an error while generating the commit message."
             else:
-                error_msg = "Failed to generate commit message due to an unexpected error."
+                error_msg = (
+                    "Failed to generate commit message due to an unexpected error."
+                )
 
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"Error details: {str(e)}", exc_info=True)

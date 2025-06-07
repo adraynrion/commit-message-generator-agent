@@ -1,6 +1,6 @@
-"""Tests for the configuration module."""
+"""Tests for the configuration module (updated for latest config models)."""
 
-from pathlib import Path
+import pytest
 
 from commit_message_generator.config import (
     AIModelConfig,
@@ -13,49 +13,54 @@ from commit_message_generator.config import (
 
 
 def test_ai_model_config_defaults() -> None:
-    """Test AIModelConfig with default values."""
     config = AIModelConfig()
     assert config.model_name == "gpt-4o-mini"
-    assert config.temperature == 0.3
+    assert config.temperature == 0.2
     assert config.max_tokens == 500
     assert config.top_p == 1.0
+    assert config.max_attempts == 3
+
+
+def test_ai_model_config_validation() -> None:
+    with pytest.raises(ValueError):
+        AIModelConfig(temperature=2.5)
+    with pytest.raises(ValueError):
+        AIModelConfig(max_tokens=50000)
+    with pytest.raises(ValueError):
+        AIModelConfig(top_p=1.5)
 
 
 def test_commit_message_config_defaults() -> None:
-    """Test CommitMessageConfig with default values."""
     config = CommitMessageConfig()
-    assert config.max_line_length == 70
+    assert config.max_line_length == 80
 
 
 def test_generator_config_defaults() -> None:
-    """Test GeneratorConfig with default values."""
     config = GeneratorConfig()
     assert isinstance(config.ai, AIModelConfig)
     assert isinstance(config.commit, CommitMessageConfig)
+    assert hasattr(config, "langfuse")
+    assert hasattr(config, "logging")
 
 
 def test_load_config_from_file_yaml(tmp_path) -> None:
-    """Test loading configuration from a YAML file."""
     config_content = """
     ai:
       model_name: test-model
       temperature: 0.5
     commit:
-      max_line_length: 80
+      max_line_length: 90
     """
-
     config_file = tmp_path / "config.yaml"
     config_file.write_text(config_content)
-
-    config = load_config_from_file(config_file)
-
+    config = load_config_from_file(str(config_file))
+    assert config is not None
     assert config.ai.model_name == "test-model"
     assert config.ai.temperature == 0.5
-    assert config.commit.max_line_length == 80
+    assert config.commit.max_line_length == 90
 
 
 def test_load_config_from_file_json(tmp_path) -> None:
-    """Test loading configuration from a JSON file."""
     config_content = """
     {
         "ai": {
@@ -72,7 +77,7 @@ def test_load_config_from_file_json(tmp_path) -> None:
     config_file.write_text(config_content)
 
     config = load_config_from_file(config_file)
-
+    assert config is not None
     assert config.ai.model_name == "test-model"
     assert config.ai.temperature == 0.5
     assert config.commit.max_line_length == 80
@@ -80,8 +85,8 @@ def test_load_config_from_file_json(tmp_path) -> None:
 
 def test_load_config_from_nonexistent_file() -> None:
     """Test loading configuration from a non-existent file returns None."""
-    assert load_config_from_file(Path("/nonexistent/file.yaml")) is None
-    assert load_config_from_file(Path("/nonexistent/file.json")) is None
+    assert load_config_from_file("/nonexistent/file.yaml") is None
+    assert load_config_from_file("/nonexistent/file.json") is None
 
 
 def test_commit_type_enum_values() -> None:

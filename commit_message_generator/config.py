@@ -147,8 +147,8 @@ class GeneratorConfig(BaseModel):
         description="Logging configuration",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "ai": {
                     "model_name": "gpt-4o-mini",
@@ -166,6 +166,7 @@ class GeneratorConfig(BaseModel):
                 },
             }
         }
+    }
 
 
 def setup_logging(logging_config: LoggingConfig) -> None:

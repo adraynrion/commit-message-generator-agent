@@ -14,7 +14,12 @@ from .config import (
     GeneratorConfig,
     SeverityLevel,
 )
-from .git_utils import get_staged_diff, get_staged_files_status, is_git_repo, run_git_command
+from .git_utils import (
+    get_staged_diff,
+    get_staged_files_status,
+    is_git_repo,
+    run_git_command,
+)
 from .models import CommitAnalysis, CommitMessageResponse
 
 __version__ = "0.2.0"

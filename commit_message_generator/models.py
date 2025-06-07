@@ -2,7 +2,6 @@
 
 import logging
 import re
-from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Optional, Union
 
@@ -86,8 +85,8 @@ class CommitMessageResponse(BaseModel):
         exclude=True,  # Don't include in serialization
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "message": "FEATURE/MEDIUM: AB-123 - Add new feature",
                 "confidence": 0.9,
@@ -96,6 +95,7 @@ class CommitMessageResponse(BaseModel):
                 "ticket": "AB-123",
             }
         }
+    }
 
     @field_validator("message")
     @classmethod
@@ -151,6 +151,8 @@ class CommitMessageResponse(BaseModel):
             prefix, *rest = first_line.split(":", 1)
             rest_of_line = ":".join(rest).strip() if rest else ""
 
+            # Always define severity
+            severity = None
             # Check prefix components if they exist
             if prefix.strip():
                 if "/" in prefix:
@@ -185,8 +187,8 @@ class CommitMessageResponse(BaseModel):
                             and severity
                             and severity not in valid_severities
                         ):
-                            logger.warning(
-                                f"Unexpected severity: {severity}. "
+                            raise ValueError(
+                                f"Invalid severity: {severity}. "
                                 f"Expected one of: {', '.join(valid_severities)}"
                             )
 

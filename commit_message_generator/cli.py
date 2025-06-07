@@ -10,9 +10,11 @@ from rich.logging import RichHandler
 
 from commit_message_generator.commit_generator import CommitMessageGenerator
 from commit_message_generator.config import LoggingConfig, setup_logging
+from commit_message_generator.rich_utils import console
 from commit_message_generator.rich_utils import (
-    console,
     print_commit_message as rich_print_commit_message,
+)
+from commit_message_generator.rich_utils import (
     print_error,
     print_header,
     print_success,
@@ -221,13 +223,16 @@ async def async_generate(
             return
 
         if not diff or not diff.strip():
-            print_error("No staged changes found. Please stage your changes with 'git add' first.")
+            print_error(
+                "No staged changes found. Please stage your changes with 'git add' first."
+            )
             return
 
         if verbose:
             # Show a summary of changes
             from .git_utils import get_staged_files_status
             from .rich_utils import print_diff_summary
+
             added, modified, deleted = get_staged_files_status()
             if added or modified or deleted:
                 print_diff_summary(added, modified, deleted)
@@ -242,12 +247,17 @@ async def async_generate(
         if verbose:
             print_header("Generating commit message...")
 
-        with console.status("[bold green]Analyzing changes and generating commit message..."):
+        with console.status(
+            "[bold green]Analyzing changes and generating commit message..."
+        ):
             commit_message = await generator.generate_commit_message(
                 diff, ticket=ticket
             )
-        
-        rich_print_commit_message(commit_message)
+        # Always extract .message if present
+        commit_message_str: str
+        if hasattr(commit_message, "message"):
+            commit_message_str = commit_message.message
+        rich_print_commit_message(commit_message_str)
 
     except ValueError as e:
         # User-friendly error message for validation errors
