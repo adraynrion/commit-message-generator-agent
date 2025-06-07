@@ -96,7 +96,10 @@ def find_config_file() -> Optional[str]:
     for path in config_paths:
         if path.exists():
             return str(path)
-    return None
+    logger.critical(
+        "Could not find config file in standard locations! Refer to README for instructions."
+    )
+    sys.exit(1)
 
 
 def setup_verbose_logging(verbose: bool) -> None:

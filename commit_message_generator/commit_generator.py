@@ -277,7 +277,7 @@ class CommitMessageGenerator:
                     for i, line in enumerate(description):
                         if len(line.strip()) > self.config.commit.max_line_length:
                             error_msg = f"[ERROR] detailed_description line {i} overflow max_line_length!"
-                            logger.warning(
+                            logger.error(
                                 f"{error_msg} (attempt {attempt + 1}/{max_attempts} - {len(line.strip())} > {self.config.commit.max_line_length})"
                             )
                             errors.append(

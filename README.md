@@ -89,7 +89,7 @@ ai:
 
 # Commit message settings
 commit:
-  max_line_length: 70  # Wrap commit message at this length
+  max_line_length: 80  # Wrap commit message at this length
 
 # Logging configuration
 logging:

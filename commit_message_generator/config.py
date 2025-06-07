@@ -87,7 +87,7 @@ class CommitMessageConfig(BaseModel):
     """Configuration for commit message generation."""
 
     max_line_length: int = Field(
-        70, ge=50, le=100, description="Maximum line length for commit messages"
+        80, ge=50, le=100, description="Maximum line length for commit messages"
     )
 
 
@@ -129,7 +129,7 @@ class GeneratorConfig(BaseModel):
                     "top_p": 1.0,
                 },
                 "commit": {
-                    "max_line_length": 70,
+                    "max_line_length": 80,
                 },
                 "logging": {
                     "level": "INFO",
