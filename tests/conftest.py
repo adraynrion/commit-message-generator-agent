@@ -52,9 +52,6 @@ def sample_config() -> Dict[str, Any]:
             "max_tokens": 500,
         },
         "commit": {
-            "require_ticket": True,
-            "default_commit_type": "IMPROVE",
-            "default_severity": "MEDIUM",
             "max_line_length": 72,
         },
     }

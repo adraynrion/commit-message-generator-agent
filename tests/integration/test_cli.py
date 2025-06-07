@@ -104,8 +104,7 @@ def test_generate_commit_message_with_config(
       model_name: "test-model"
       temperature: 0.5
     commit:
-      require_ticket: false
-      default_commit_type: FEATURE
+      max_line_length: 80
     """
     config_file.write_text(config_content)
 
@@ -132,5 +131,4 @@ def test_generate_commit_message_with_config(
     config_arg = mock_generator_class.call_args[0][0]
     assert config_arg.ai.model_name == "test-model"
     assert config_arg.ai.temperature == 0.5
-    assert config_arg.commit.require_ticket is False
-    assert config_arg.commit.default_commit_type == "FEATURE"
+    assert config_arg.commit.max_line_length == 80

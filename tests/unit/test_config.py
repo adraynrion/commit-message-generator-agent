@@ -24,10 +24,7 @@ def test_ai_model_config_defaults() -> None:
 def test_commit_message_config_defaults() -> None:
     """Test CommitMessageConfig with default values."""
     config = CommitMessageConfig()
-    assert config.require_ticket is True
-    assert config.default_commit_type == CommitType.IMPROVE
-    assert config.default_severity == SeverityLevel.MEDIUM
-    assert config.max_line_length == 72
+    assert config.max_line_length == 70
 
 
 def test_generator_config_defaults() -> None:
@@ -44,8 +41,7 @@ def test_load_config_from_file_yaml(tmp_path) -> None:
       model_name: test-model
       temperature: 0.5
     commit:
-      require_ticket: false
-      default_commit_type: FEATURE
+      max_line_length: 80
     """
 
     config_file = tmp_path / "config.yaml"
@@ -55,8 +51,7 @@ def test_load_config_from_file_yaml(tmp_path) -> None:
 
     assert config.ai.model_name == "test-model"
     assert config.ai.temperature == 0.5
-    assert config.commit.require_ticket is False
-    assert config.commit.default_commit_type == CommitType.FEATURE
+    assert config.commit.max_line_length == 80
 
 
 def test_load_config_from_file_json(tmp_path) -> None:
@@ -68,8 +63,7 @@ def test_load_config_from_file_json(tmp_path) -> None:
             "temperature": 0.5
         },
         "commit": {
-            "require_ticket": false,
-            "default_commit_type": "FEATURE"
+            "max_line_length": 80
         }
     }
     """
@@ -81,8 +75,7 @@ def test_load_config_from_file_json(tmp_path) -> None:
 
     assert config.ai.model_name == "test-model"
     assert config.ai.temperature == 0.5
-    assert config.commit.require_ticket is False
-    assert config.commit.default_commit_type == CommitType.FEATURE
+    assert config.commit.max_line_length == 80
 
 
 def test_load_config_from_nonexistent_file() -> None:

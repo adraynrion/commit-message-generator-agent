@@ -7,68 +7,11 @@ ai:
   temperature: 0.3  # 0.0 to 2.0, higher is more creative/random
   max_tokens: 500   # Maximum length of the generated message
   top_p: 1.0        # Nucleus sampling parameter (0.0 to 1.0)
+  max_attempts: 3   # Maximum number of attempts to generate a valid commit message
 
 # Commit message settings
 commit:
-  require_ticket: true  # Whether a ticket number is required
-  default_commit_type: "IMPROVE"  # Default type if not detected
-  default_severity: "MEDIUM"     # Default severity if not detected
-  max_line_length: 72            # Wrap commit message at this length
-
-# Custom prompts (optional)
-custom_prompts:
-  # Custom prompt for feature commits
-  FEATURE: |
-    You are adding a new feature to the codebase. Focus on:
-    - What new functionality was added
-    - Why this feature is valuable
-    - Any important implementation details
-
-  # Custom prompt for bug fixes
-  BUGFIX: |
-    You are fixing a bug in the code. Explain:
-    - What was the bug/issue
-    - How it was fixed
-    - Any potential side effects to be aware of
-
-  # Custom prompt for documentation updates
-  DOC: |
-    You are updating documentation. Focus on:
-    - What documentation was added/updated
-    - Why the changes were made
-    - Any important notes for readers
-
-# Git integration
-git:
-  # Branch name patterns to extract ticket numbers from
-  branch_patterns:
-    - "^([A-Z]{2,}-[A-Za-z0-9]+).*$"  # Matches ABC-123-description
-
-  # Ignore files/directories when analyzing changes
-  ignore_paths:
-    - "*.lock"
-    - "package-lock.json"
-    - "yarn.lock"
-    - "node_modules/**"
-    - "__pycache__/**"
-    - "*.py[cod]"
-    - "*.so"
-    - ".DS_Store"
-    - "*.swp"
-    - "*.swo"
-    - "*.egg-info"
-    - "dist/**"
-    - "build/**"
-    - "*.log"
-    - "*.tmp"
-    - "*.bak"
-    - ".venv"
-    - "venv"
-    - "env"
-    - ".env"
-    - ".env.*"
-    - "*.env"
-    - "*.env.*"
+  max_line_length: 70  # Wrap commit message at this length
 
 # Logging configuration
 logging:
@@ -79,6 +22,6 @@ logging:
 # Langfuse configuration for tracing and observability
 langfuse:
   enabled: false  # Set to true to enable Langfuse tracing
-  public_key: ""  # Or set via LANGFUSE_PUBLIC_KEY env var
-  secret_key: ""  # Or set via LANGFUSE_SECRET_KEY env var
-  host: "https://cloud.langfuse.com"  # Or set via LANGFUSE_HOST env var
+  public_key: ""
+  secret_key: ""
+  host: "https://cloud.langfuse.com"

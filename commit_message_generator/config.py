@@ -41,6 +41,9 @@ class AIModelConfig(BaseModel):
         500, ge=100, le=4000, description="Maximum number of tokens to generate"
     )
     top_p: float = Field(1.0, ge=0.0, le=1.0, description="Nucleus sampling parameter")
+    max_attempts: int = Field(
+        3, ge=1, le=10, description="Maximum number of attempts to generate a valid commit message"
+    )
 
     @field_validator("temperature")
     @classmethod
@@ -80,15 +83,6 @@ class LoggingConfig(BaseModel):
 class CommitMessageConfig(BaseModel):
     """Configuration for commit message generation."""
 
-    require_ticket: bool = Field(
-        True, description="Whether a ticket number is required"
-    )
-    default_commit_type: CommitType = Field(
-        CommitType.IMPROVE, description="Default commit type if not detected"
-    )
-    default_severity: SeverityLevel = Field(
-        SeverityLevel.MEDIUM, description="Default severity if not detected"
-    )
     max_line_length: int = Field(
         70, ge=50, le=100, description="Maximum line length for commit messages"
     )
@@ -121,10 +115,6 @@ class GeneratorConfig(BaseModel):
         default_factory=LoggingConfig,
         description="Logging configuration",
     )
-    custom_prompts: Dict[str, str] = Field(
-        default_factory=dict, description="Custom prompts for different commit types"
-    )
-
     class Config:
         json_schema_extra = {
             "example": {
@@ -135,9 +125,6 @@ class GeneratorConfig(BaseModel):
                     "top_p": 1.0,
                 },
                 "commit": {
-                    "require_ticket": True,
-                    "default_commit_type": "IMPROVE",
-                    "default_severity": "MEDIUM",
                     "max_line_length": 70,
                 },
                 "logging": {
@@ -145,10 +132,7 @@ class GeneratorConfig(BaseModel):
                     "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                     "file": "commit_gen.log",
                 },
-                "custom_prompts": {
-                    "FEATURE": "You are adding a new feature...",
-                    "BUGFIX": "You are fixing a bug...",
-                },
+
             }
         }
 

@@ -84,20 +84,11 @@ ai:
   model_name: "gpt-4o-mini"
   temperature: 0.3
   max_tokens: 500
+  max_attempts: 3
 
 # Commit message settings
 commit:
-  require_ticket: true
-  default_commit_type: "IMPROVE"
-  default_severity: "MEDIUM"
-  max_line_length: 72
-
-# Custom prompts (optional)
-custom_prompts:
-  FEATURE: |
-    You are adding a new feature. Focus on:
-    - What new functionality was added
-    - Why this feature is valuable
+  max_line_length: 70
 ```
 
 ## 📝 Usage

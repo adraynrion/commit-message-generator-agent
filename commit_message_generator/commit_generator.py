@@ -37,30 +37,41 @@ class CommitMessageGenerator:
         self.config = config or GeneratorConfig()
         self.system_prompt = self._build_system_prompt()
         self.ai = self._init_ai()
-        self.tracer = configure_langfuse(
-            langfuse_public_key=self.config.langfuse.public_key,
-            langfuse_secret_key=self.config.langfuse.secret_key,
-            langfuse_host=self.config.langfuse.host,
-        )
+        if self.config.langfuse.enabled:
+            self.tracer = configure_langfuse(
+                langfuse_public_key=self.config.langfuse.public_key,
+                langfuse_secret_key=self.config.langfuse.secret_key,
+                langfuse_host=self.config.langfuse.host,
+            )
 
     async def call_ai(self, user_prompt: str, errors: List[str]):
-        with self.tracer.start_as_current_span(
-            "Git-Commit-Message-Generation"
-        ) as main_span:
-            repo_name = Path.cwd().name
-            main_span.set_attribute("langfuse.user.id", f"gcmg-model-{repo_name}")
-            main_span.set_attribute(
-                "langfuse.session.id", f"gcmg-session-{self.config.ai.model_name}"
-            )
+        # Compile prompt with any errors
+        compiled_prompt = user_prompt + (
+            "\n\nErrors:\n" + "\n".join(errors) if errors else ""
+        )
 
-            # Compile prompt with any errors
-            compiled_prompt = user_prompt + (
-                "\n\nErrors:\n" + "\n".join(errors) if errors else ""
-            )
+        logger.info(f"Compiled prompt length: {len(compiled_prompt)}")
 
-            logger.info(f"Compiled prompt length: {len(compiled_prompt)}")
+        if self.config.langfuse.enabled:
+            with self.tracer.start_as_current_span("Git-Commit-Message-Generation") as main_span:
+                repo_name = Path.cwd().name
+                main_span.set_attribute("langfuse.user.id", f"gcmg-model-{repo_name}")
+                main_span.set_attribute("langfuse.session.id", f"gcmg-session-{self.config.ai.model_name}")
+                main_span.set_attribute("input.value", compiled_prompt)
 
-            # Make the AI call with the message history
+                # Make the AI call with the message history
+                response = await self.ai.run(
+                    user_prompt=compiled_prompt,
+                    output_model=CommitMessageResponse,
+                    model=self.config.ai.model_name,
+                    temperature=self.config.ai.temperature,
+                    max_tokens=self.config.ai.max_tokens,
+                )
+
+                main_span.set_attribute("output.value", response.output)
+                return response.output
+        else:
+            # Make the AI call without tracing
             response = await self.ai.run(
                 user_prompt=compiled_prompt,
                 output_model=CommitMessageResponse,
@@ -68,11 +79,7 @@ class CommitMessageGenerator:
                 temperature=self.config.ai.temperature,
                 max_tokens=self.config.ai.max_tokens,
             )
-
-            main_span.set_attribute("input.value", compiled_prompt)
-            main_span.set_attribute("output.value", response.output)
-
-        return response.output
+            return response.output
 
     def _init_ai(self) -> Agent:
         """Initialize the AI client with configuration."""
@@ -161,7 +168,7 @@ class CommitMessageGenerator:
             # Call the AI to generate the commit message with retry logic for format validation
             logger.debug("Calling AI...")
             response = None
-            max_attempts = 3
+            max_attempts = self.config.ai.max_attempts
             attempt = 0
             while attempt < max_attempts:
                 errors = []
