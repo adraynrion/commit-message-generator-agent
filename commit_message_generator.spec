@@ -4,12 +4,29 @@ import sys
 import importlib.util
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 
+# Disable source code validation for Pydantic
+os.environ['PYDANTIC_DISABLE_SOURCE_VALIDATION'] = '1'
+
 # Add the current directory to the path
 cwd = os.path.abspath('.')
 sys.path.insert(0, cwd)
 
 # Add the current directory to the hooks path
-hookspath = ['hooks']
+hookspath = ['hooks', cwd]
+
+# Add runtime hooks
+runtime_hooks = ['hooks/rthook-pydantic.py']
+
+# Add hidden imports
+hiddenimports = [
+    'pydantic_core',
+    'pydantic.json',
+    'pydantic.typing',
+    'pydantic.fields',
+    'pydantic_ai_slim',
+    'logfire.integrations.pydantic',
+    'importlib_metadata',
+]
 
 block_cipher = None
 
@@ -53,7 +70,7 @@ a = Analysis(
     pathex=[cwd],
     binaries=[],
     datas=datas,
-    hiddenimports=[
+    hiddenimports=hiddenimports + [
         'commit_message_generator',
         'commit_message_generator.commit_generator',
         'commit_message_generator.config',
@@ -72,7 +89,7 @@ a = Analysis(
         'importlib_metadata._text',
     ],
     hookspath=hookspath,
-    runtime_hooks=['rthook-pydantic_ai.py'],
+    runtime_hooks=runtime_hooks + ['rthook-pydantic_ai.py'],
     excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,

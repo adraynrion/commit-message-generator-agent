@@ -1,4 +1,9 @@
-.PHONY: clean-imports sort-imports format format-docs add-type-annotations type-check test test-cov all
+.DEFAULT_GOAL := all
+
+############################################
+# Code quality checks and formatting
+############################################
+.PHONY: clean-imports sort-imports format format-docs add-type-annotations type-check all
 
 # Run all code quality checks and formatting
 all: clean-imports sort-imports format format-docs add-type-annotations type-check
@@ -47,6 +52,11 @@ type-check:
 	@mypy .
 	@echo "✅ Type checking complete"
 
+############################################
+# Tests
+############################################
+.PHONY: test test-cov
+
 # Run tests
 test:
 	@echo "🧪 Running test suite..."
@@ -56,3 +66,15 @@ test:
 test-cov:
 	@echo "📊 Running test suite with coverage..."
 	@pytest --cov=commit_message_generator --cov-report=term-missing tests/
+
+############################################
+# Build
+############################################
+.PHONY: build
+
+# Build the application
+build:
+	@echo "🏗️ Building the application..."
+	@pyinstaller commit_message_generator.spec
+	@echo "✅ Build complete"
+
