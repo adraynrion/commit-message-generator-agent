@@ -178,6 +178,12 @@ class CommitMessageGenerator:
             # Call the AI to generate the commit message with retry logic for format validation
             logger.debug("Calling AI...")
             response = None
+
+            formatted_correct_format_error = ERROR_CORRECT_FORMAT.format(
+                first_line_limit=self.config.commit.max_line_length - 20,
+                wrap_limit=self.config.commit.max_line_length,
+            )
+
             max_attempts = self.config.ai.max_attempts
             attempt = 0
             while attempt < max_attempts:
@@ -218,7 +224,7 @@ class CommitMessageGenerator:
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
                         errors.append(
-                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                            error_msg + "\nFormat **must** be:\n" + formatted_correct_format_error
                         )
 
                     # Check if prefix exists
@@ -230,7 +236,7 @@ class CommitMessageGenerator:
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
                         errors.append(
-                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                            error_msg + "\nFormat **must** be:\n" + formatted_correct_format_error
                         )
 
                     # Check if prefix is correctly formatted
@@ -240,7 +246,7 @@ class CommitMessageGenerator:
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
                         errors.append(
-                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                            error_msg + "\nFormat **must** be:\n" + formatted_correct_format_error
                         )
 
                     # Check if ticket number matches
@@ -250,7 +256,7 @@ class CommitMessageGenerator:
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
                         errors.append(
-                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                            error_msg + "\nFormat **must** be:\n" + formatted_correct_format_error
                         )
 
                     # Check if empty_line is correctly set
@@ -260,7 +266,7 @@ class CommitMessageGenerator:
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
                         errors.append(
-                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                            error_msg + "\nFormat **must** be:\n" + formatted_correct_format_error
                         )
 
                     # Check if description is correctly set
@@ -270,7 +276,7 @@ class CommitMessageGenerator:
                             f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
                         )
                         errors.append(
-                            error_msg + "\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT
+                            error_msg + "\nFormat **must** be:\n" + formatted_correct_format_error
                         )
 
                     # Check every line of description if it overflow max_line_length
@@ -283,7 +289,7 @@ class CommitMessageGenerator:
                             errors.append(
                                 error_msg
                                 + "\nFormat **must** be:\n"
-                                + ERROR_CORRECT_FORMAT
+                                + formatted_correct_format_error
                             )
 
                     # --------- If we have errors, try again ---------
@@ -301,7 +307,7 @@ class CommitMessageGenerator:
                     error_msg = f"AI call failed: {str(e)}"
                     logger.error(f"{error_msg} (attempt {attempt + 1}/{max_attempts})")
 
-                    errors.append("\nFormat **must** be:\n" + ERROR_CORRECT_FORMAT)
+                    errors.append("\nFormat **must** be:\n" + formatted_correct_format_error)
 
                     attempt += 1
                     if attempt >= max_attempts:

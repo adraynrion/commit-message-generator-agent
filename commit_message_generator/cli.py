@@ -57,7 +57,7 @@ def cli() -> None:
     "--ticket",
     "-t",
     required=True,
-    help="Ticket number (e.g., AB-12aze34). Must be provided as <2-letters>-<X-letters-or-digits>.",
+    help="Ticket number (e.g., AB-12aze34). Must be provided as <2-letters>-<alphanumeric>.",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Show more detailed output")
 def generate(
