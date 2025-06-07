@@ -1,8 +1,12 @@
 # Git Commit Message Generator Agent
 
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.11.9-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Type Checker: mypy](https://img.shields.io/badge/type%20checker-mypy-blueviolet)](http://mypy-lang.org/)
+[![Code style: flake8](https://img.shields.io/badge/code%20style-flake8-ff69b4)](https://flake8.pycqa.org/)
+[![Testing: pytest](https://img.shields.io/badge/testing-pytest-0d8fcc)](https://docs.pytest.org/)
+[![Coverage](https://github.com/adraynrion/commit-message-generator-agent/actions/workflows/test.yml/badge.svg?branch=main&event=push)](https://github.com/adraynrion/commit-message-generator-agent/actions/workflows/test.yml)
 
 An AI-powered CLI tool that helps generate clear, concise, and conventional commit messages based on your git changes.
 
@@ -35,8 +39,8 @@ cd commit-message-generator-agent
 
 2. Create and activate a virtual environment:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 3. Install in development mode with all dependencies:

@@ -48,6 +48,28 @@ ignore = [
 # Only process .py files
 extensions = ["py"]
 
+[tool.coverage.run]
+source = ["commit_message_generator"]
+include = ["commit_message_generator/*.py"]
+omit = [
+    "commit_message_generator/__main__.py",
+    "commit_message_generator/__init__.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+    "raise ValueError",
+    "@abstractmethod",
+]
+
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
