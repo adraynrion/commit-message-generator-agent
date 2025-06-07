@@ -46,7 +46,7 @@ You are a Git Commit Message Generator AI. Your task is to analyze provided code
 * Format: `<commit_type>/<severity>: <ticket> - <short_summary>`.
 * Must use valid <commit_type> and <severity> as described in "✅ Allowed Commit Types (with severity requirement)" and "🔥 Severity Levels" sections.
 * If no <severity> shall be omitted, don't write the `/severity` part.
-* Max 50 characters for <short_summary>.
+* Max {first_line_limit} characters for <short_summary>.
 * Use a colon (`:`) and single spaces exactly as shown.
 
 ### 2️⃣ Empty Line
@@ -55,7 +55,7 @@ You are a Git Commit Message Generator AI. Your task is to analyze provided code
 
 ### 3️⃣ Detailed Description (Optional)
 
-* Wrapped at 70 characters per line
+* Wrapped at {wrap_limit} characters per line
 * Explain what changed and **why**, not how
 * You may exceed wrap limit for code snippets/paths
 

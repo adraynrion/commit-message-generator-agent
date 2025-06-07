@@ -81,14 +81,28 @@ Example configuration (see [default_config.yaml](commit_message_generator/defaul
 ```yaml
 # AI model configuration
 ai:
-  model_name: "gpt-4o-mini"
-  temperature: 0.3
-  max_tokens: 500
-  max_attempts: 3
+  model_name: "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster/cheaper results
+  temperature: 0.3  # 0.0 to 2.0, higher is more creative/random
+  max_tokens: 500   # Maximum length of the generated message
+  top_p: 1.0        # Nucleus sampling parameter (0.0 to 1.0)
+  max_attempts: 3   # Maximum number of attempts to generate a valid commit message
 
 # Commit message settings
 commit:
-  max_line_length: 70
+  max_line_length: 70  # Wrap commit message at this length
+
+# Logging configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "commit_gen.log"  # Leave empty to log to console only
+
+# Optional: Langfuse configuration for tracing and observability
+langfuse:
+  enabled: false  # Set to true to enable Langfuse tracing
+  public_key: ""
+  secret_key: ""
+  host: "https://cloud.langfuse.com"
 ```
 
 ## 📝 Usage
@@ -98,19 +112,10 @@ commit:
 commit-msg-gen generate
 
 # Specify a ticket number
-commit-msg-gen generate --ticket ABC-123
+commit-msg-gen generate --ticket AB-1234
 
-# Use a specific commit type and severity
-commit-msg-gen generate --type FEATURE --severity MAJOR
-
-# Generate from a specific git repository
-commit-msg-gen generate --repo /path/to/repo
-
-# Dry run (don't actually commit)
-commit-msg-gen generate --dry-run
-
-# Use a specific configuration file
-commit-msg-gen generate --config ./custom-config.yaml
+# Enable verbose output
+commit-msg-gen generate --verbose
 
 # Show help
 commit-msg-gen --help

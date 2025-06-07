@@ -3,7 +3,7 @@
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -42,7 +42,10 @@ class AIModelConfig(BaseModel):
     )
     top_p: float = Field(1.0, ge=0.0, le=1.0, description="Nucleus sampling parameter")
     max_attempts: int = Field(
-        3, ge=1, le=10, description="Maximum number of attempts to generate a valid commit message"
+        3,
+        ge=1,
+        le=10,
+        description="Maximum number of attempts to generate a valid commit message",
     )
 
     @field_validator("temperature")
@@ -115,6 +118,7 @@ class GeneratorConfig(BaseModel):
         default_factory=LoggingConfig,
         description="Logging configuration",
     )
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -132,7 +136,6 @@ class GeneratorConfig(BaseModel):
                     "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                     "file": "commit_gen.log",
                 },
-
             }
         }
 

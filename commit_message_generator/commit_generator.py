@@ -44,7 +44,7 @@ class CommitMessageGenerator:
                 langfuse_host=self.config.langfuse.host,
             )
 
-    async def call_ai(self, user_prompt: str, errors: List[str]):
+    async def call_ai(self, user_prompt: str, errors: List[str], attempt: int):
         # Compile prompt with any errors
         compiled_prompt = user_prompt + (
             "\n\nErrors:\n" + "\n".join(errors) if errors else ""
@@ -53,10 +53,14 @@ class CommitMessageGenerator:
         logger.info(f"Compiled prompt length: {len(compiled_prompt)}")
 
         if self.config.langfuse.enabled:
-            with self.tracer.start_as_current_span("Git-Commit-Message-Generation") as main_span:
+            with self.tracer.start_as_current_span(
+                f"Git-Commit-Message-Generation (attempt {attempt + 1}/{self.config.ai.max_attempts})"
+            ) as main_span:
                 repo_name = Path.cwd().name
                 main_span.set_attribute("langfuse.user.id", f"gcmg-model-{repo_name}")
-                main_span.set_attribute("langfuse.session.id", f"gcmg-session-{self.config.ai.model_name}")
+                main_span.set_attribute(
+                    "langfuse.session.id", f"gcmg-session-{self.config.ai.model_name}"
+                )
                 main_span.set_attribute("input.value", compiled_prompt)
 
                 # Make the AI call with the message history
@@ -124,9 +128,15 @@ class CommitMessageGenerator:
                 logger.error("System prompt is empty")
                 raise ValueError("System prompt is empty")
 
-            logger.debug(f"System prompt: {SYSTEM_PROMPT}")
+            formatted_system_prompt = SYSTEM_PROMPT.format(
+                first_line_limit=self.config.commit.max_line_length - 20,
+                wrap_limit=self.config.commit.max_line_length,
+            )
+            logger.debug(
+                f"System prompt format:\nfirst_line_limit: {self.config.commit.max_line_length - 20}\nwrap_limit: {self.config.commit.max_line_length}"
+            )
 
-            return SYSTEM_PROMPT
+            return formatted_system_prompt
         except Exception as e:
             logger.error(f"Error building system prompt: {str(e)}", exc_info=True)
             raise
@@ -173,7 +183,7 @@ class CommitMessageGenerator:
             while attempt < max_attempts:
                 errors = []
                 try:
-                    response = await self.call_ai(user_prompt, errors)
+                    response = await self.call_ai(user_prompt, errors, attempt)
 
                     # Single point of response validation
                     if not response:
@@ -265,10 +275,10 @@ class CommitMessageGenerator:
 
                     # Check every line of description if it overflow max_line_length
                     for i, line in enumerate(description):
-                        if len(line) > self.config.commit.max_line_length:
-                            error_msg = f"[ERROR] Description line {i} overflow max_line_length!"
+                        if len(line.strip()) > self.config.commit.max_line_length:
+                            error_msg = f"[ERROR] detailed_description line {i} overflow max_line_length!"
                             logger.warning(
-                                f"{error_msg} (attempt {attempt + 1}/{max_attempts})"
+                                f"{error_msg} (attempt {attempt + 1}/{max_attempts} - {len(line.strip())} > {self.config.commit.max_line_length})"
                             )
                             errors.append(
                                 error_msg
@@ -298,7 +308,7 @@ class CommitMessageGenerator:
                         raise
 
             # Final validation after all attempts
-            if not response:
+            if not response or attempt >= max_attempts:
                 error_msg = (
                     f"Failed to get valid response after {max_attempts} attempts"
                 )

@@ -14,14 +14,7 @@ from .config import (
     GeneratorConfig,
     SeverityLevel,
 )
-from .git_utils import (
-    get_commit_message_template,
-    get_current_branch,
-    get_git_status,
-    get_staged_diff,
-    is_git_repo,
-    run_git_command,
-)
+from .git_utils import get_staged_diff, is_git_repo, run_git_command
 from .models import CommitAnalysis, CommitContext, CommitMessageResponse
 
 __version__ = "0.2.0"
@@ -41,10 +34,7 @@ __all__ = [
     # Functions
     "generate",
     "cli",
-    "get_git_status",
     "get_staged_diff",
-    "get_current_branch",
     "is_git_repo",
     "run_git_command",
-    "get_commit_message_template",
 ]

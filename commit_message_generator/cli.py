@@ -16,7 +16,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     stream=sys.stderr,
 )
-logger = logging.getLogger(__name__)
+
+# Create logger here but don't set level yet
+logger = logging.getLogger()
 
 
 def print_commit_message(message: str) -> None:
@@ -54,27 +56,22 @@ def cli() -> None:
 @click.option(
     "--ticket",
     "-t",
-    help="Ticket number (e.g., AB-1234). If not provided, will try to extract from branch name.",
-)
-@click.option(
-    "--repo",
-    "-r",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
-    help="Path to the git repository (default: current directory)",
+    required=True,
+    help="Ticket number (e.g., AB-12aze34). Must be provided as <2-letters>-<X-letters-or-digits>.",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Show more detailed output")
 def generate(
     ticket: Optional[str] = None,
-    repo: Optional[str] = None,
     verbose: bool = False,
 ) -> None:
     """Generate a commit message based on staged changes.
 
     This command analyzes the currently staged changes in your git repository and
-    generates a conventional commit message based on the changes found.
+    generates a conventional commit message based on the changes found. Must be run from
+    within a git repository.
 
     """
-    asyncio.run(async_generate(ticket, repo, verbose))
+    asyncio.run(async_generate(ticket, verbose))
 
 
 def find_config_file() -> Optional[str]:
@@ -110,29 +107,34 @@ def setup_verbose_logging(verbose: bool) -> None:
 
     """
     if verbose:
-        # Set root logger to DEBUG level
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.DEBUG)
+        # Set root logger and all module loggers to DEBUG level
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            stream=sys.stderr,
+        )
 
         # Update all existing handlers to use DEBUG level
-        for handler in root_logger.handlers:
-            handler.setLevel(logging.DEBUG)
+        for logger_name in logging.root.manager.loggerDict:
+            logger = logging.getLogger(logger_name)
+            logger.setLevel(logging.DEBUG)
+            for handler in logger.handlers:
+                handler.setLevel(logging.DEBUG)
 
-    logger.debug("Verbose logging enabled")
+    logger.debug("Verbose logging %s", "enabled" if verbose else "disabled")
 
 
 async def async_generate(
     ticket: Optional[str] = None,
-    repo: Optional[str] = None,
     verbose: bool = False,
 ) -> None:
     """Generate a commit message based on staged changes.
 
     This is the async implementation of the generate command.
+    Must be run from within a git repository.
 
     Args:
         ticket: Optional ticket number to include in the commit message
-        repo: Optional path to the git repository
         verbose: Whether to show verbose output
 
     """
@@ -184,14 +186,14 @@ async def async_generate(
         # Get the staged diff
         from .git_utils import get_staged_diff, is_git_repo
 
-        if not is_git_repo(repo):
+        if not is_git_repo():
             click.echo(
                 "Error: Not a git repository. Please run this command from within a git repository.",
                 err=True,
             )
             return
 
-        diff, return_code = get_staged_diff(cwd=repo)
+        diff, return_code = get_staged_diff()
 
         if return_code != 0:
             click.echo(f"Error getting staged changes: {diff}", err=True)
