@@ -150,7 +150,7 @@ endif
 	@# Stage the version change
 	@git add $(VERSION_FILE)
 	@# Create commit
-	@git commit -m "Bump version to $(VERSION)"
+	@git commit -m "VERSION: Upgrade version to $(VERSION)"
 	@# Create annotated tag
 	@git tag -a "v$(VERSION)" -m "Version $(VERSION)"
 	@echo "✅ Version bumped to $(VERSION) and tagged as v$(VERSION)"
