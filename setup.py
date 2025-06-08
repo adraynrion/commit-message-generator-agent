@@ -74,7 +74,6 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3.11",
         "Topic :: Software Development :: Version Control :: Git",
@@ -86,4 +85,5 @@ setup(
         "Bug Reports": "https://github.com/adraynrion/commit-message-generator-agent/issues",
         "Source": "https://github.com/adraynrion/commit-message-generator-agent",
     },
+    license="MIT",
 )

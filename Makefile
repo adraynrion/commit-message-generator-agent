@@ -62,10 +62,10 @@ test:
 	@echo "🧪 Running test suite..."
 	@pytest tests/
 
-# Run tests with coverage report
+# Run tests with coverage
 test-cov:
 	@echo "📊 Running test suite with coverage..."
-	@pytest --cov=commit_message_generator --cov-report=term-missing tests/
+	@pytest --cov=commit_message_generator --cov-report=term-missing --cov-report=xml --cov-report=html tests/
 
 ############################################
 # Build
