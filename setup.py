@@ -49,6 +49,7 @@ setup(
             "pytest-asyncio>=0.23.0,<0.24.0",
             "types-PyYAML>=6.0.0,<7.0.0",
             "types-requests>=2.31.0,<3.0.0",
+            "pyinstaller>=6.0.0,<7.0.0",
             "types-setuptools>=69.5.0,<70.0.0",
             "types-pyinstaller>=6.13.0,<7.0.0",
             "flake8-annotations>=3.0.0,<4.0.0",
