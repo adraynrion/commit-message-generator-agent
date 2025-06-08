@@ -34,15 +34,6 @@ jobs:
         make build
 
 
-    - name: Publish to PyPI
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
-        skip-existing: true
-        verbose: true
-
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
@@ -54,3 +45,18 @@ jobs:
           dist/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Python package
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        python -m pip install --upgrade pip build
+        python -m build --sdist --wheel --outdir dist/
+
+    - name: Publish to PyPI
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        skip-existing: true
+        verbose: true
