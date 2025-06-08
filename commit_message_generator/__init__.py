@@ -22,7 +22,7 @@ from .git_utils import (
 )
 from .models import CommitAnalysis, CommitMessageResponse
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __all__ = [
     # Main classes
     "CommitMessageGenerator",
