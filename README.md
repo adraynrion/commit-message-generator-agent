@@ -119,11 +119,11 @@ commit-msg-gen --help
 commit-msg-gen generate --help
 ```
 
-## 🔌 Build
+## 🔌 Build & Packaging
 
 ### Prerequisites
 
-1. Install Ubuntu dependencies :
+1. Install Ubuntu dependencies:
 ```bash
 sudo apt-get update
 sudo apt-get install -y \
@@ -142,25 +142,40 @@ sudo apt-get install -y \
     libgdbm-compat-dev
 ```
 
-2. Use pyenv and install python 3.11 :
+2. Use pyenv and install Python 3.11:
 ```bash
 pyenv install 3.11.9
 pyenv global 3.11.9
 ```
 
-3. Generate venv and install dependencies :
+3. Create and activate a virtual environment:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
 ```
 
-4. Build the CLI using PyInstaller:
+4. Install the package in development mode with all dependencies:
 ```bash
-pyinstaller commit_message_generator.spec
+pip install -e '.[dev]'
 ```
 
-This will create a standalone executable in the `dist` directory.
+### Building with PyInstaller
+
+For detailed instructions on building a standalone executable with PyInstaller, see our [PyInstaller Guide](README-PYINSTALLER.md).
+
+#### Quick Start
+
+1. Clean the repository:
+```bash
+make clean
+```
+
+2. Build the application:
+```bash
+make build
+```
+
+The standalone executable will be available in the `dist/commit-message-generator` directory.
 
 ## 🔌 API
 

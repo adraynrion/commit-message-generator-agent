@@ -1,47 +1,13 @@
-# Core dependencies
-click>=8.1.0
-pydantic>=2.0.0,<3.0.0
-pydantic-ai>=0.1.0,<1.0.0
-python-dotenv>=1.0.0,<2.0.0
-rich>=13.0.0,<14.0.0
-PyYAML>=6.0.0,<7.0.0
-logfire>=3.14.0,<4.0.0  # For LLM observability and tracing
-nest-asyncio>=1.6.0
+click==8.1.0
+logfire==3.14.0
+nest-asyncio==1.6.0
+openai==1.82.1
+pydantic==2.11.5
+pydantic-ai==0.2.9
+pydantic-ai-slim==0.2.9
+python-dotenv==1.1.0
+PyYAML==6.0.2
+rich==14.0.0
 
-# AI/ML dependencies
-openai>=1.0.0,<2.0.0
-tiktoken>=0.5.0,<1.0.0
-
-# Development dependencies (not required for production)
-# These are installed with pip install -e '.[dev]'
-black>=24.0.0,<25.0.0
-flake8>=7.0.0,<8.0.0
-isort>=5.13.0,<6.0.0
-mypy>=1.8.0,<2.0.0
-pytest>=8.0.0,<9.0.0
-pytest-cov>=4.1.0,<5.0.0
-pytest-asyncio>=0.23.0,<0.24.0
-types-PyYAML>=6.0.0,<7.0.0
-types-requests>=2.31.0,<3.0.0
-types-setuptools>=69.5.0,<70.0.0
-types-pyinstaller>=6.13.0,<7.0.0
-
-# Linting
-flake8-annotations>=3.0.0,<4.0.0
-flake8-bandit>=4.1.0,<5.0.0
-flake8-bugbear>=24.0.0,<25.0.0
-flake8-comprehensions>=3.16.0,<4.0.0  # Latest version compatible with Python 3.12
-flake8-docstrings>=1.7.0,<2.0.0
-flake8-import-order>=0.18.0,<0.19.0
-flake8-print>=5.0.0,<6.0.0
-flake8-simplify>=0.21.0,<0.22.0
-pep8-naming>=0.14.0,<0.15.0
-
-# Auto-fixing
-autotyping>=24.9.0  # For adding type hints
-libcst>=1.1.0  # Required by autotyping
-docformatter>=1.7.0,<2.0.0  # For docstring formatting
-pycln>=2.4.0,<3.0.0  # For removing unused imports
-
-# Build dependencies
-pyinstaller>=6.14.0,<7.0.0  # For building the CLI
+# Note: Development dependencies are in setup.py
+# Install them with: pip install -e '.[dev]'

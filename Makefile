@@ -70,11 +70,88 @@ test-cov:
 ############################################
 # Build
 ############################################
-.PHONY: build
+.PHONY: build clean-build clean-dist clean-cache clean-all clean
 
 # Build the application
 build:
 	@echo "🏗️ Building the application..."
-	@pyinstaller commit_message_generator.spec
+	@pyinstaller commit_message_generator.spec --clean
 	@echo "✅ Build complete"
 
+# Clean build artifacts
+clean-build:
+	@echo "🧹 Cleaning build artifacts..."
+	@rm -rf build/
+
+# Clean distribution artifacts
+clean-dist:
+	@echo "🗑️  Cleaning distribution artifacts..."
+	@rm -rf dist/
+
+# Clean cache and temporary files
+clean-cache:
+	@echo "🧽 Cleaning cache and temporary files..."
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type d -name "*.egg-info" -exec rm -rf {} +
+	@find . -type f -name "*.py[co]" -delete
+	@find . -type f -name "*.so" -delete
+
+# Clean everything
+clean-all: clean-build clean-dist clean-cache
+	@echo "✨ All clean!"
+
+# Alias for clean-all
+clean: clean-all
+
+############################################
+# Virtual environment
+############################################
+.PHONY: venv
+
+# Create a virtual environment
+venv:
+	@echo "🐍 Creating virtual environment..."
+	@python -m venv .venv
+	@echo "✅ Virtual environment created"
+
+# Clean virtual environment
+clean-venv:
+	@echo "🗑️  Cleaning virtual environment..."
+	@rm -rf .venv
+	@echo "✅ Virtual environment cleaned"
+
+# Reset virtual environment
+reset-venv: clean-venv venv
+	@echo "🔄 Resetting virtual environment..."
+	@pip install --upgrade pip
+	@pip install -e .
+	@echo "✅ Virtual environment reset"
+
+############################################
+# Version Management
+############################################
+.PHONY: bump-version
+
+# Version to bump to (e.g., make bump-version VERSION=1.2.3)
+VERSION ?=
+
+# File containing the version
+VERSION_FILE = commit_message_generator/__init__.py
+
+# Bump version and create Git tag
+# Usage: make bump-version VERSION=x.y.z
+bump-version:
+ifndef VERSION
+	$(error VERSION is not set. Usage: make bump-version VERSION=x.y.z)
+endif
+	@echo "🆙 Bumping version to $(VERSION)..."
+	@# Update version in __init__.py
+	@sed -i "s/^__version__ = .*/__version__ = \"$(VERSION)\"/" $(VERSION_FILE)
+	@# Stage the version change
+	@git add $(VERSION_FILE)
+	@# Create commit
+	@git commit -m "Bump version to $(VERSION)"
+	@# Create annotated tag
+	@git tag -a "v$(VERSION)" -m "Version $(VERSION)"
+	@echo "✅ Version bumped to $(VERSION) and tagged as v$(VERSION)"
+	@echo "📌 Don't forget to push the tag: git push origin v$(VERSION)"

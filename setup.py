@@ -1,6 +1,16 @@
+import re
 from pathlib import Path
 
 from setuptools import find_packages, setup
+
+
+def get_version():
+    version_file = Path("commit_message_generator/__init__.py").read_text()
+    version_match = re.search(r'^__version__ = ["\']([^"\']+)["\']', version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
 
 # Read the contents of README.md
 this_directory = Path(__file__).parent
@@ -14,9 +24,9 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="commit-message-generator",
-    version="1.0.0",  # Updated version for the enhanced implementation
+    version=get_version(),
     author="Adraynrion",
-    author_email="your.email@example.com",
+    author_email="adraynrion@citizenofai.com",
     description="An AI-powered tool to generate conventional commit messages from git diffs",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -30,15 +40,30 @@ setup(
     install_requires=requirements,
     extras_require={
         "dev": [
-            "black>=23.0.0",
-            "flake8>=6.0.0",
-            "isort>=5.12.0",
-            "mypy>=1.0.0",
-            "pytest>=7.3.0",
-            "pytest-cov>=4.0.0",
-            "pytest-asyncio>=0.21.0",
-            "types-PyYAML>=6.0.0",
-            "types-requests>=2.28.0",
+            "black>=24.0.0,<25.0.0",
+            "flake8>=7.0.0,<8.0.0",
+            "isort>=5.13.0,<6.0.0",
+            "mypy>=1.8.0,<2.0.0",
+            "pytest>=8.0.0,<9.0.0",
+            "pytest-cov>=4.1.0,<5.0.0",
+            "pytest-asyncio>=0.23.0,<0.24.0",
+            "types-PyYAML>=6.0.0,<7.0.0",
+            "types-requests>=2.31.0,<3.0.0",
+            "types-setuptools>=69.5.0,<70.0.0",
+            "types-pyinstaller>=6.13.0,<7.0.0",
+            "flake8-annotations>=3.0.0,<4.0.0",
+            "flake8-bandit>=4.1.0,<5.0.0",
+            "flake8-bugbear>=24.0.0,<25.0.0",
+            "flake8-comprehensions>=3.16.0,<4.0.0",
+            "flake8-docstrings>=1.7.0,<2.0.0",
+            "flake8-import-order>=0.18.0,<0.19.0",
+            "flake8-print>=5.0.0,<6.0.0",
+            "flake8-simplify>=0.21.0,<0.22.0",
+            "pep8-naming>=0.14.0,<0.15.0",
+            "autotyping>=24.9.0",
+            "libcst>=1.1.0",
+            "docformatter>=1.7.0,<2.0.0",
+            "pycln>=2.4.0,<3.0.0",
         ],
     },
     entry_points={
@@ -51,15 +76,11 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
         "Topic :: Software Development :: Version Control :: Git",
         "Typing :: Typed",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.11.9,<3.12.0",
     keywords="git commit message generator ai cli",
     project_urls={
         "Bug Reports": "https://github.com/adraynrion/commit-message-generator-agent/issues",
